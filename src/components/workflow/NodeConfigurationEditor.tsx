@@ -1,10 +1,12 @@
 import type { ChangeEvent } from 'react';
 import { Input } from '@/components/ui/input';
+import { aiModelsForProvider, DEFAULT_AI_MODELS, isAIProviderId, type AICredentialSummary, type AIProviderId } from '@/types/ai';
 import type { FlowNode } from './flow-types';
 
 interface NodeConfigurationEditorProps {
   node: FlowNode;
   onChange: (config: Record<string, unknown>) => void;
+  credentials?: AICredentialSummary[];
 }
 
 const comparisonOptions = [
@@ -18,13 +20,66 @@ const comparisonOptions = [
   ['is_not_empty', 'Is not empty'],
 ] as const;
 
-export function NodeConfigurationEditor({ node, onChange }: NodeConfigurationEditorProps) {
+export function NodeConfigurationEditor({ node, onChange, credentials = [] }: NodeConfigurationEditorProps) {
   const config = node.data.config;
   const update = (key: string, value: unknown) => onChange({ ...config, [key]: value });
   const textField = (key: string) => typeof config[key] === 'string' ? config[key] as string : typeof config[key] === 'number' ? String(config[key]) : '';
   const updateNumber = (key: string, value: string) => update(key, value === '' ? undefined : Number(value));
+  const selectedProvider: AIProviderId = isAIProviderId(config.provider) ? config.provider : 'gemini';
   const operator = textField('operator');
   const isPresenceCheck = operator === 'is_empty' || operator === 'is_not_empty';
+
+  const updateProvider = (value: string) => {
+    if (!isAIProviderId(value)) return;
+    const nextConfig: Record<string, unknown> = { ...config, provider: value, model: DEFAULT_AI_MODELS[value] };
+    delete nextConfig.credentialId;
+    onChange(nextConfig);
+  };
+
+  const renderAIProviderFields = () => {
+    const availableCredentials = credentials.filter((credential) => credential.provider === selectedProvider);
+    const modelOptions = aiModelsForProvider(selectedProvider);
+    const selectedModel = modelOptions.some((option) => option.id === textField('model'))
+      ? textField('model')
+      : DEFAULT_AI_MODELS[selectedProvider];
+    return (
+      <section className="space-y-3 rounded-lg border bg-muted/20 p-3">
+        <label className="block space-y-1.5 text-xs font-medium">
+          AI provider
+          <select value={selectedProvider} onChange={(event) => updateProvider(event.target.value)} className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+            <option value="gemini">Google Gemini</option>
+            <option value="openai">OpenAI</option>
+          </select>
+        </label>
+        <label className="block space-y-1.5 text-xs font-medium">
+          Model
+          <select value={selectedModel} onChange={(event) => update('model', event.target.value)} className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+            {modelOptions.map((option) => <option key={option.id} value={option.id}>{option.label}{option.recommended ? ' · Recommended' : ''}</option>)}
+          </select>
+        </label>
+        <label className="block space-y-1.5 text-xs font-medium">
+          Credential
+          <select value={textField('credentialId')} onChange={(event) => {
+            const nextConfig = { ...config };
+            if (event.target.value) nextConfig.credentialId = event.target.value;
+            else delete nextConfig.credentialId;
+            onChange(nextConfig);
+          }} className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+            {selectedProvider === 'gemini' && <option value="">FlowPilot Gemini (server-managed)</option>}
+            {selectedProvider === 'openai' && <option value="">Choose a saved OpenAI key</option>}
+            {availableCredentials.map((credential) => <option key={credential.id} value={credential.id}>{credential.name} · {credential.maskedKey}</option>)}
+          </select>
+        </label>
+        {selectedProvider === 'openai' && availableCredentials.length === 0 && (
+          <p className="rounded-md border border-amber-200 bg-amber-50 p-2 text-[11px] leading-5 text-amber-950">Add an OpenAI key on the AI Providers page before running this node.</p>
+        )}
+        {selectedProvider === 'gemini' && !textField('credentialId') && (
+          <p className="text-[11px] leading-5 text-muted-foreground">The server's <code>GEMINI_MODEL_ID</code> override is used when this node has no explicit model saved.</p>
+        )}
+        <p className="text-[11px] leading-5 text-muted-foreground">The workflow stores only the credential ID. Provider keys are decrypted on the server after owner verification.</p>
+      </section>
+    );
+  };
 
   const renderOperator = () => (
     <label className="block space-y-1.5 text-xs font-medium">
@@ -135,6 +190,7 @@ export function NodeConfigurationEditor({ node, onChange }: NodeConfigurationEdi
     const jsonOutput = textField('outputFormat') === 'json';
     return (
       <div className="space-y-3">
+        {renderAIProviderFields()}
         <label className="block space-y-1.5 text-xs font-medium">
           Prompt
           <textarea value={textField('prompt')} maxLength={16_384} rows={5} placeholder={'Summarize this: {{trigger.body.text}}'} onChange={(event) => update('prompt', event.target.value)} className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 font-mono text-xs" />
@@ -156,11 +212,14 @@ export function NodeConfigurationEditor({ node, onChange }: NodeConfigurationEdi
             <textarea value={textField('responseSchema')} maxLength={8_192} rows={5} placeholder={'{"type":"object","properties":{"answer":{"type":"string"}},"required":["answer"],"additionalProperties":false}'} onChange={(event) => update('responseSchema', event.target.value)} className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 font-mono text-xs" />
           </label>
         )}
-        <div className="grid grid-cols-2 gap-3">
-          <label className="block space-y-1.5 text-xs font-medium">
+        {selectedProvider === 'openai' && jsonOutput && textField('responseSchema').trim() !== '' && (
+          <p className="rounded-md border border-amber-200 bg-amber-50 p-2 text-[11px] leading-5 text-amber-950">For OpenAI, JSON Schema must have an object root, list every property as required, and set <code>additionalProperties</code> to false on every object.</p>
+        )}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {selectedProvider === 'gemini' && <label className="block space-y-1.5 text-xs font-medium">
             Temperature
             <Input type="number" min="0" max="2" step="0.1" value={textField('temperature')} onChange={(event) => updateNumber('temperature', event.target.value)} />
-          </label>
+          </label>}
           <label className="block space-y-1.5 text-xs font-medium">
             Max output tokens
             <Input type="number" min="1" max="2048" step="1" value={textField('maxTokens')} onChange={(event) => updateNumber('maxTokens', event.target.value)} />
@@ -174,6 +233,7 @@ export function NodeConfigurationEditor({ node, onChange }: NodeConfigurationEdi
   if (node.data.category === 'ai_generation') {
     return (
       <div className="space-y-3">
+        {renderAIProviderFields()}
         <label className="block space-y-1.5 text-xs font-medium">
           Prompt
           <textarea value={textField('prompt')} maxLength={16_384} rows={5} placeholder="Write a helpful reply to {{trigger.body.name}}." onChange={(event) => update('prompt', event.target.value)} className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 font-mono text-xs" />
@@ -182,11 +242,11 @@ export function NodeConfigurationEditor({ node, onChange }: NodeConfigurationEdi
           System instruction (optional)
           <textarea value={textField('systemInstruction')} maxLength={4_096} rows={3} onChange={(event) => update('systemInstruction', event.target.value)} className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-xs" />
         </label>
-        <div className="grid grid-cols-2 gap-3">
-          <label className="block space-y-1.5 text-xs font-medium">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {selectedProvider === 'gemini' && <label className="block space-y-1.5 text-xs font-medium">
             Temperature
             <Input type="number" min="0" max="2" step="0.1" value={textField('temperature')} onChange={(event) => updateNumber('temperature', event.target.value)} />
-          </label>
+          </label>}
           <label className="block space-y-1.5 text-xs font-medium">
             Max output tokens
             <Input type="number" min="1" max="2048" step="1" value={textField('maxTokens')} onChange={(event) => updateNumber('maxTokens', event.target.value)} />
@@ -201,6 +261,7 @@ export function NodeConfigurationEditor({ node, onChange }: NodeConfigurationEdi
     const labels = Array.isArray(config.labels) ? config.labels.filter((value): value is string => typeof value === 'string') : [];
     return (
       <div className="space-y-3">
+        {renderAIProviderFields()}
         <label className="block space-y-1.5 text-xs font-medium">
           Text to classify
           <textarea value={textField('input')} maxLength={16_384} rows={4} placeholder="{{trigger.body.message}}" onChange={(event) => update('input', event.target.value)} className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 font-mono text-xs" />
@@ -217,6 +278,7 @@ export function NodeConfigurationEditor({ node, onChange }: NodeConfigurationEdi
   if (node.data.category === 'ai_extraction') {
     return (
       <div className="space-y-3">
+        {renderAIProviderFields()}
         <label className="block space-y-1.5 text-xs font-medium">
           Source text
           <textarea value={textField('input')} maxLength={16_384} rows={4} placeholder="{{trigger.body.document}}" onChange={(event) => update('input', event.target.value)} className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 font-mono text-xs" />
@@ -229,6 +291,7 @@ export function NodeConfigurationEditor({ node, onChange }: NodeConfigurationEdi
           Required JSON Schema
           <textarea value={textField('responseSchema')} maxLength={8_192} rows={6} placeholder={'{"type":"object","properties":{"person":{"type":"string"}},"required":["person"],"additionalProperties":false}'} onChange={(event) => update('responseSchema', event.target.value)} className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 font-mono text-xs" />
         </label>
+        {selectedProvider === 'openai' && <p className="rounded-md border border-amber-200 bg-amber-50 p-2 text-[11px] leading-5 text-amber-950">OpenAI schemas require an object root, every property in <code>required</code>, and <code>additionalProperties: false</code> for every object.</p>}
       </div>
     );
   }
@@ -236,6 +299,7 @@ export function NodeConfigurationEditor({ node, onChange }: NodeConfigurationEdi
   if (node.data.category === 'ai_summarization') {
     return (
       <div className="space-y-3">
+        {renderAIProviderFields()}
         <label className="block space-y-1.5 text-xs font-medium">
           Content to summarize
           <textarea value={textField('input')} maxLength={16_384} rows={5} placeholder="{{trigger.body.text}}" onChange={(event) => update('input', event.target.value)} className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 font-mono text-xs" />
@@ -252,5 +316,5 @@ export function NodeConfigurationEditor({ node, onChange }: NodeConfigurationEdi
     );
   }
 
-  return <p className="rounded-lg border bg-muted/40 p-3 text-xs leading-5 text-muted-foreground">This node is not executable in Phase 5. Other triggers and integrations are planned for later phases.</p>;
+  return <p className="rounded-lg border bg-muted/40 p-3 text-xs leading-5 text-muted-foreground">This node is not implemented in the current execution scope. Additional triggers and integrations are planned for later phases.</p>;
 }

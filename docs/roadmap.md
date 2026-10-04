@@ -60,10 +60,12 @@ This document outlines the sequential phases for building FlowPilot AI.
 - Provide node-specific configuration editors without exposing provider keys or arbitrary model selection in workflow data.
 - Validate with deterministic fake-provider unit tests; no live API key, paid model request, database integration, or deployment is used.
 
-### Phase 6: Bring Your Own AI (BYO AI)
-- Build encrypted Credential Vault in Netlify Database for user API keys.
-- Extend AI Provider Interface to support user-provided Gemini API keys, OpenAI API keys, and custom providers.
-- Build UI for user AI provider management and model selection in nodes.
+### Phase 6: Bring Your Own AI (BYO AI) (IN PROGRESS)
+- Encrypt user-managed Gemini and OpenAI API keys at rest in the existing credentials table; expose only masked metadata and credential IDs to the client.
+- Resolve AI providers server-side after session-derived owner verification; support user-provided Gemini and OpenAI keys through the shared provider interface.
+- Add credential management and curated provider-specific model selection to the UI and workflow nodes.
+- Keep arbitrary custom endpoints disabled until credentialed outbound requests receive a separate SSRF, DNS-pinning, and credential-exfiltration review; custom provider adapters remain a code-level extension point.
+- Validate with deterministic tests only; do not make live provider calls or deploy during implementation.
 
 ### Phase 7: Automation Integrations & Triggers
 - Implement Webhook Trigger endpoint receiver with dynamic path routing.
@@ -75,7 +77,7 @@ This document outlines the sequential phases for building FlowPilot AI.
 - Implement retry mechanics, failure handling, and execution timeout protection in engine.
 
 ### Phase 9: Security, Testing & Production Hardening
-- Implement rate limiting, key encryption verification, and security audit.
+- Audit and verify the Phase 6 key-encryption design; add rate limiting and production security review.
 - Write unit tests for workflow engine execution and Zod validation schemas.
 - Set up automated CI/CD checks for GitHub Actions and Netlify deployment.
 

@@ -120,6 +120,26 @@ export function parseResponseJsonSchema(source: string): SchemaRecord {
   return parsed;
 }
 
+function isStrictOpenAISchemaNode(schema: SchemaRecord): boolean {
+  const types = typeof schema.type === 'string' ? [schema.type] : Array.isArray(schema.type) ? schema.type : [];
+  if (types.includes('object')) {
+    if (!isRecord(schema.properties) || schema.additionalProperties !== false) return false;
+    const propertyNames = Object.keys(schema.properties);
+    const required = Array.isArray(schema.required) ? schema.required : [];
+    if (required.length !== propertyNames.length || propertyNames.some((key) => !required.includes(key))) return false;
+    return Object.values(schema.properties).every((child) => isRecord(child) && isStrictOpenAISchemaNode(child));
+  }
+  if (types.includes('array')) {
+    return isRecord(schema.items) && isStrictOpenAISchemaNode(schema.items);
+  }
+  return true;
+}
+
+/** OpenAI strict structured outputs require an object root and fully required closed objects. */
+export function isOpenAIStrictJsonSchema(schema: SchemaRecord): boolean {
+  return schema.type === 'object' && isStrictOpenAISchemaNode(schema);
+}
+
 function matchesType(value: unknown, type: string): boolean {
   if (type === 'object') return isRecord(value);
   if (type === 'array') return Array.isArray(value);

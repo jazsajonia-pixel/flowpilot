@@ -1,5 +1,5 @@
 import type { NodeCategory } from '../../types/workflow';
-import { AIProviderError } from '../ai/gemini-provider';
+import { AIProviderError } from '../ai/errors';
 
 export interface SafeExecutionLog {
   nodeId: string;

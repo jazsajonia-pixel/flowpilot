@@ -278,3 +278,36 @@ test('all Phase 5 AI node types resolve templates, parse structured results, and
     assert.deepEqual(result.logs.find((log) => log.nodeId === ids.ai)?.outputData && (result.logs.find((log) => log.nodeId === ids.ai)?.outputData as Record<string, unknown>).model, 'gemini-3.8-flash');
   }
 });
+
+test('workflow execution resolves BYO provider selections only when the AI node is reached', async () => {
+  const selectionCalls: Array<{ provider: string; credentialId?: string; model?: string }> = [];
+  const provider: AIProvider = {
+    id: 'test-openai',
+    name: 'Test OpenAI',
+    generateCompletion: async (input) => ({ text: 'private AI result', model: input.model ?? 'gpt-6-luna' }),
+  };
+  const graph: WorkflowGraphInput = {
+    nodes: [
+      node(ids.trigger, 'manual_trigger'),
+      node(ids.ai, 'ai_generation', {
+        provider: 'openai',
+        credentialId: 'c1d6b0d0-2ce8-4f58-8e60-59f249c33971',
+        model: 'gpt-6-luna',
+        prompt: 'Generate a reply to {{trigger.body.message}}',
+      }),
+    ],
+    connections: [edge('c18b6c07-750c-4be1-a1e0-8b1a5f2e0031', ids.trigger, ids.ai)],
+  };
+
+  const result = await executeWorkflowGraph(graph, { body: { message: 'private source' } }, {
+    resolveAIProvider: async (selection) => {
+      selectionCalls.push(selection);
+      return provider;
+    },
+  });
+
+  assert.equal(result.status, 'completed');
+  assert.deepEqual(selectionCalls, [{ provider: 'openai', credentialId: 'c1d6b0d0-2ce8-4f58-8e60-59f249c33971', model: 'gpt-6-luna' }]);
+  assert.equal(JSON.stringify(result).includes('private AI result'), false);
+  assert.equal(JSON.stringify(result).includes('private source'), false);
+});
