@@ -17,10 +17,21 @@ This document outlines the sequential phases for building FlowPilot AI.
 - Implement core layout navigation (Sidebar, Header, Dashboard frame).
 - Implement global state, React Router navigation, and TanStack Query API client foundation.
 
-### Phase 2: Authentication & Netlify Database (PostgreSQL + Drizzle ORM) (NEXT)
-- Set up Netlify Database with PostgreSQL schema using Drizzle ORM (`User`, `Workflow`, `Node`, `Connection`, `Execution`, `Credential`).
+### Phase 2A: Database Infrastructure + Drizzle + Netlify Database (COMPLETE)
+- Set up `@netlify/database` and `drizzle-orm` server-side database integration.
+- Establish `src/db/index.ts`, `src/db/schema.ts`, `drizzle.config.ts`, and `netlify/database/migrations/`.
+- Implement `netlify/functions/db-health.ts` server-side database connectivity health check.
+
+### Phase 2B: Application Database Schema (NEXT)
+- Define Drizzle schema for `users`, `workflows`, `nodes`, `connections`, `executions`, `execution_logs`, `credentials`, and `integrations`.
+- Generate and verify initial Drizzle migrations under `netlify/database/migrations/`.
+
+### Phase 2C: Authentication & Sessions
 - Implement user authentication & session management (JWT / Netlify Functions).
 - Build security middleware for server-side token validation and ownership checking.
+
+### Phase 2D: Protected API & Ownership Verification
+- Enforce server-side authorization and workflow ownership validation across API endpoints.
 
 ### Phase 3: Visual Workflow Builder
 - Integrate React Flow for interactive canvas editing.
