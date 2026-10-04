@@ -14,9 +14,8 @@ import {
 } from 'drizzle-orm/pg-core';
 
 /**
- * Phase 2B application schema.
- * Authentication, sessions, authorization middleware, and credential encryption
- * are intentionally outside this schema-only phase.
+ * Application schema through Phase 2C.
+ * Protected-resource authorization and credential encryption remain later phases.
  */
 
 export const executionStatusEnum = pgEnum('execution_status', [
@@ -37,11 +36,32 @@ export const users = pgTable(
   {
     id: uuid('id').defaultRandom().primaryKey(),
     email: varchar('email', { length: 320 }).notNull(),
+    // Nullable to allow safe upgrades for any identity rows created before Phase 2C.
+    passwordHash: text('password_hash'),
     displayName: varchar('display_name', { length: 120 }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [uniqueIndex('users_email_unique').on(table.email)],
+);
+
+export const sessions = pgTable(
+  'sessions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    // Store only the SHA-256 verifier, never the cookie's bearer token.
+    tokenHash: varchar('token_hash', { length: 64 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex('sessions_token_hash_unique').on(table.tokenHash),
+    index('sessions_user_expires_at_idx').on(table.userId, table.expiresAt),
+  ],
 );
 
 export const workflows = pgTable(

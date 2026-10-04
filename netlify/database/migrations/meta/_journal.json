@@ -8,6 +8,13 @@
       "when": 1791119093705,
       "tag": "0000_phase_2b_application_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791120078949,
+      "tag": "0001_phase_2c_auth_sessions",
+      "breakpoints": true
     }
   ]
 }

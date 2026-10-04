@@ -66,7 +66,7 @@ FlowPilot AI
 ### 2.2 API & Serverless Backend
 - **Platform:** Netlify Functions (Node.js REST API serverless endpoints).
 - **Validation:** Server-side request parsing and validation using Zod.
-- **Security:** JWT authentication header verification, server-side workflow ownership verification, and encrypted key management.
+- **Security:** Phase 2C establishes server-side email/password authentication and revocable cookie sessions. Protected-resource authorization and workflow ownership checks remain Phase 2D work; credential encryption remains a later phase.
 
 ### 2.3 Database Layer (Server-Side Serverless Access)
 ```
@@ -84,7 +84,7 @@ Netlify Database (PostgreSQL)
 - **Native Adapter:** Server-side database operations use Netlify's native Drizzle adapter (`drizzle-orm/netlify-db` via `@netlify/db`).
 - **Strict Boundary:** Database access logic (`src/db/`) is restricted exclusively to server-side Netlify Functions.
 - **Zero Client Exposure:** Database credentials and connection strings are never exposed to Vite client bundles or React UI code.
-- **Schema & Migrations:** Managed with Drizzle ORM and `drizzle-kit`, configured with migration outputs under `netlify/database/migrations/`. Phase 2B defines the application tables; authentication, sessions, and authorization remain later phases. See [`database-schema.md`](database-schema.md) for table relationships and security boundaries.
+- **Schema & Migrations:** Managed with Drizzle ORM and `drizzle-kit`, configured with migration outputs under `netlify/database/migrations/`. Phase 2B defines the core application entities; Phase 2C adds password-hash and session storage. Protected-resource authorization remains Phase 2D work. See [`database-schema.md`](database-schema.md) and [`authentication.md`](authentication.md) for table relationships and security boundaries.
 - **Production Verification:** Remote production database query execution requires an active linked Netlify Database environment.
 
 ### 2.4 AI Provider Layer
@@ -114,5 +114,5 @@ The AI subsystem uses a provider abstraction layer to decoupling engine executio
 ```
 
 - **FlowPilot Gemini:** Built-in default AI engine using platform API keys.
-- **BYO Providers:** Users can register custom API keys for Google Gemini, OpenAI, or compatible custom endpoints.
-- **Security:** Third-party AI keys are stored encrypted at rest in Netlify Database (PostgreSQL) and accessed exclusively in serverless Netlify Functions during node execution.
+- **BYO Providers:** User-provided API-key registration is planned for Phase 6, together with the encrypted credential vault.
+- **Security:** Credential encryption, key management, and server-only key use are planned for Phase 6 and are not implemented yet; do not store real third-party API keys in the current prototype.

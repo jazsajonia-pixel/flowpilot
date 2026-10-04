@@ -87,10 +87,10 @@ export function AIProvidersPage() {
         <CardContent>
           <div className="rounded-lg border border-border bg-muted/30 p-4 text-xs text-muted-foreground space-y-2">
             <p>
-              • <strong>Server-Side Security:</strong> All API keys are stored encrypted at rest on Netlify Database and executed exclusively in serverless Netlify Functions.
+              • <strong>Credential Vault:</strong> Encrypted API-key storage and server-side execution are planned for Phase 6 and are not implemented yet. Do not enter real keys in this prototype.
             </p>
             <p>
-              • <strong>Zero Client Exposure:</strong> Secrets are never sent to or exposed in the frontend browser environment.
+              • <strong>Zero Client Exposure:</strong> The future credential vault will keep secrets out of the frontend browser environment.
             </p>
           </div>
         </CardContent>
