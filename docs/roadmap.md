@@ -37,14 +37,14 @@ This document outlines the sequential phases for building FlowPilot AI.
 - Validate all mutation payloads and reject client-supplied identity/ownership fields.
 - Preserve execution history when workflows are deleted; graph editing follows in Phase 3 and execution remains later.
 
-### Phase 3: Visual Workflow Builder (IN REVIEW)
+### Phase 3: Visual Workflow Builder (COMPLETE)
 - Integrate React Flow (`@xyflow/react`) for interactive canvas editing and custom trigger, AI, logic, and action nodes.
 - Add a node library with tap-to-add and drag-and-drop, plus a node inspector for label editing.
 - Validate connections (no self-links, duplicate links, trigger targets, or cycles) and allow at most one trigger.
 - Persist graph positions, nodes, and connections through an authenticated, owner-scoped API with atomic replacement.
 - Keep activation, execution, and node-specific credentials/settings out of scope.
 
-### Phase 4: Workflow Execution Engine
+### Phase 4: Workflow Execution Engine (NEXT)
 - Implement topological graph execution engine in Netlify Functions.
 - Build node execution handlers for Triggers, Logic (Condition, Filter), and Actions (HTTP Request, Webhook).
 - Build variable interpolation system (`{{steps.nodeId.data}}`) and execution context manager.
