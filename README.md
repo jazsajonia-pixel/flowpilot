@@ -10,7 +10,8 @@ FlowPilot AI is a modern, web-based visual automation platform that enables user
 
 - **Phase 0 — Project Constitution & Architecture:** COMPLETE
 - **Phase 1 — Application Foundation:** COMPLETE
-- **Phase 2 — Authentication & Netlify Database:** NEXT
+- **Phase 2A — Database Infrastructure + Drizzle + Netlify Database:** COMPLETE
+- **Phase 2B — Application Database Schema:** NEXT
 
 ---
 
@@ -50,9 +51,10 @@ Condition (IF Priority == "High")
 - **API Architecture:** RESTful Endpoints
 - **Serverless Hosting:** Netlify Functions
 
-### Database
+### Database Layer
 - **Database:** Netlify Database (PostgreSQL)
-- **ORM:** Drizzle ORM *(Planned for Phase 2)*
+- **ORM & Migrations:** Drizzle ORM & drizzle-kit
+- **Serverless Access:** `@netlify/database` integration via Netlify Functions
 
 ### AI Layer
 - **Default Built-in Provider:** Google Gemini API
@@ -65,7 +67,7 @@ Condition (IF Priority == "High")
 ```
 FlowPilot AI
 │
-├── Frontend
+├── Frontend (React / Vite)
 │   ├── Dashboard
 │   ├── Workflow Builder (React Flow)
 │   ├── Workflow Templates
@@ -75,11 +77,12 @@ FlowPilot AI
 │   └── Settings
 │
 ├── API & Serverless Backend (Netlify Functions)
-│   ├── Authentication
+│   ├── Authentication & Authorization
 │   ├── Workflows API
 │   ├── Executions API
 │   ├── AI Router
-│   └── Credentials Vault
+│   ├── Credentials Vault
+│   └── Database Health Check (/api/db-health)
 │
 ├── Workflow Engine
 │   ├── Trigger System (Manual, Webhook, Schedule)
@@ -95,7 +98,7 @@ FlowPilot AI
 │   └── Custom Provider Adapters
 │
 └── Database (Netlify Database / PostgreSQL / Drizzle ORM)
-    ├── Users
+    ├── Users & Auth
     ├── Workflows & Nodes
     ├── Executions & Step Logs
     └── Credentials (Encrypted)
@@ -105,9 +108,9 @@ FlowPilot AI
 
 ## 🔒 Security Rules
 
-- **Zero Secrets in Client:** API keys and credentials are never exposed to frontend code or client bundles.
+- **Zero Secrets in Client:** API keys and database credentials are never exposed to frontend code or client bundles.
 - **Git Hygiene:** Secrets and `.env` files are strictly excluded from source control. Template configuration is provided in `.env.example`.
-- **Server-Side Credential Handling:** Third-party user API keys are handled server-side in Netlify Functions and encrypted at rest in Netlify Database.
+- **Server-Side Credential & Database Handling:** Database queries and third-party user API keys are handled strictly server-side in Netlify Functions and encrypted at rest in Netlify Database.
 - **Strict Payload Validation:** All API requests are validated with **Zod** schemas.
 - **Server-Side Authorization:** Workflow ownership and authorization are enforced strictly server-side.
 - **Credential Masking:** Sensitive tokens are masked in UI and logs (`sk-••••••••1234`).
@@ -118,15 +121,18 @@ FlowPilot AI
 
 1. **Phase 0:** Project Constitution & Architecture *(Completed)*
 2. **Phase 1:** Application Foundation *(Completed)*
-3. **Phase 2:** Authentication & Netlify Database (PostgreSQL + Drizzle ORM) *(Next)*
-4. **Phase 3:** Visual Workflow Builder (React Flow)
-5. **Phase 4:** Workflow Execution Engine
-6. **Phase 5:** Gemini AI Integration
-7. **Phase 6:** Bring Your Own AI (BYO AI)
-8. **Phase 7:** Automation Integrations & Webhooks
-9. **Phase 8:** Execution Monitoring & Reliability
-10. **Phase 9:** Security, Testing & Production Hardening
-11. **Phase 10:** Final UI/UX & Portfolio Polish
+3. **Phase 2A:** Database Infrastructure + Drizzle + Netlify Database *(Completed)*
+4. **Phase 2B:** Application Database Schema *(Next)*
+5. **Phase 2C:** Authentication & Sessions
+6. **Phase 2D:** Protected API & Ownership Verification
+7. **Phase 3:** Visual Workflow Builder (React Flow)
+8. **Phase 4:** Workflow Execution Engine
+9. **Phase 5:** Gemini AI Integration
+10. **Phase 6:** Bring Your Own AI (BYO AI)
+11. **Phase 7:** Automation Integrations & Webhooks
+12. **Phase 8:** Execution Monitoring & Reliability
+13. **Phase 9:** Security, Testing & Production Hardening
+14. **Phase 10:** Final UI/UX & Portfolio Polish
 
 See [`docs/roadmap.md`](docs/roadmap.md) for full details.
 

@@ -68,7 +68,24 @@ FlowPilot AI
 - **Validation:** Server-side request parsing and validation using Zod.
 - **Security:** JWT authentication header verification, server-side workflow ownership verification, and encrypted key management.
 
-### 2.3 AI Provider Layer
+### 2.3 Database Layer (Server-Side Serverless Access)
+```
+React Frontend
+      │ (HTTPS REST API / JSON)
+      ▼
+Netlify Functions
+      │
+      ▼
+Drizzle ORM
+      │
+      ▼
+Netlify Database (PostgreSQL)
+```
+- **Strict Boundary:** Database access logic (`src/db/`) is restricted exclusively to server-side Netlify Functions.
+- **Zero Client Exposure:** Database credentials and connection strings are never exposed to Vite client bundles or React UI code.
+- **Schema & Migrations:** Managed with Drizzle ORM and `drizzle-kit`, configured with migration outputs under `netlify/database/migrations/`. Application schema definitions are intentionally deferred to Phase 2B.
+
+### 2.4 AI Provider Layer
 The AI subsystem uses a provider abstraction layer to decoupling engine execution from specific AI vendors:
 
 ```
@@ -97,13 +114,3 @@ The AI subsystem uses a provider abstraction layer to decoupling engine executio
 - **FlowPilot Gemini:** Built-in default AI engine using platform API keys.
 - **BYO Providers:** Users can register custom API keys for Google Gemini, OpenAI, or compatible custom endpoints.
 - **Security:** Third-party AI keys are stored encrypted at rest in Netlify Database (PostgreSQL) and accessed exclusively in serverless Netlify Functions during node execution.
-
-### 2.4 Workflow Execution Engine
-- **Graph Evaluation:** Graph traversal engine that executes triggered flows sequentially or in parallel based on node dependencies.
-- **Context Injection:** Outputs from preceding nodes are available to downstream nodes via double-curly expressions or step references (e.g., `{{steps.trigger.data.body}}`).
-- **Resilience:** Built-in node retry mechanics, error capture, branch skipping on negative evaluation conditions, and structured execution logging.
-
-### 2.5 Database Layer (Netlify Database, PostgreSQL & Drizzle ORM)
-- **Database:** Netlify Database (PostgreSQL platform for FlowPilot).
-- **ORM:** Drizzle ORM for schema management, migrations, and type-safe database queries.
-- **Core Entities:** `User`, `Workflow`, `Node`, `Connection`, `Execution`, `ExecutionLog`, `Credential`, `Integration`.
