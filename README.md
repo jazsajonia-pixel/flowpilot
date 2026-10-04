@@ -13,7 +13,8 @@ FlowPilot AI is a modern, web-based visual automation platform that enables user
 - **Phase 2A — Database Infrastructure + Drizzle + Netlify Database:** COMPLETE
 - **Phase 2B — Application Database Schema:** COMPLETE
 - **Phase 2C — Authentication & Sessions:** COMPLETE
-- **Phase 2D — Protected API & Ownership Verification:** IN REVIEW
+- **Phase 2D — Protected API & Ownership Verification:** COMPLETE
+- **Phase 3 — Visual Workflow Builder:** IN REVIEW
 
 ---
 
@@ -42,7 +43,7 @@ Condition (IF Priority == "High")
 - **Framework:** React 18 with TypeScript
 - **Build Tool:** Vite
 - **Styling:** Tailwind CSS & shadcn/ui component architecture
-- **Visual Builder:** React Flow (`reactflow`) *(Planned for Phase 3)*
+- **Visual Builder:** React Flow (`@xyflow/react`) with custom trigger, AI, logic, and action nodes
 - **Icons:** Lucide React (`lucide-react`)
 - **Routing:** React Router (`react-router-dom`)
 - **Data Fetching:** TanStack Query (`@tanstack/react-query`)
@@ -114,7 +115,7 @@ FlowPilot AI
 - **Git Hygiene:** Secrets and `.env` files are strictly excluded from source control. Template configuration is provided in `.env.example`.
 - **Server-Side Credential & Database Handling:** Database queries run in Netlify Functions. Credential encryption and secret-management endpoints are planned for Phase 6 and are not yet implemented.
 - **Strict Payload Validation:** All API requests are validated with **Zod** schemas.
-- **Server-Side Authentication & Authorization:** Workflow metadata endpoints require server-verified sessions and owner-scoped queries. Placeholder frontend pages are not protected, and client-side session display is not access control.
+- **Server-Side Authentication & Authorization:** Workflow metadata and graph endpoints require server-verified sessions and owner-scoped queries. Other placeholder frontend pages are not protected, and client-side session display is not access control.
 - **Credential Masking:** Sensitive tokens are masked in UI and logs (`sk-••••••••1234`).
 
 ---
@@ -126,8 +127,8 @@ FlowPilot AI
 3. **Phase 2A:** Database Infrastructure + Drizzle + Netlify Database *(Completed)*
 4. **Phase 2B:** Application Database Schema *(Completed)*
 5. **Phase 2C:** Authentication & Sessions *(Completed)*
-6. **Phase 2D:** Protected API & Ownership Verification *(In review)*
-7. **Phase 3:** Visual Workflow Builder (React Flow) *(Next after Phase 2D)*
+6. **Phase 2D:** Protected API & Ownership Verification *(Completed)*
+7. **Phase 3:** Visual Workflow Builder (React Flow) *(In review)*
 8. **Phase 4:** Workflow Execution Engine
 9. **Phase 5:** Gemini AI Integration
 10. **Phase 6:** Bring Your Own AI (BYO AI)
@@ -147,6 +148,7 @@ See [`docs/roadmap.md`](docs/roadmap.md) for full details.
 - [`docs/database-schema.md`](docs/database-schema.md) — Phase 2B database tables, relationships, and security boundaries.
 - [`docs/authentication.md`](docs/authentication.md) — Phase 2C account authentication, cookie sessions, and security boundaries.
 - [`docs/workflow-api.md`](docs/workflow-api.md) — Phase 2D protected workflow metadata routes and ownership rules.
+- [`docs/workflow-builder.md`](docs/workflow-builder.md) — Phase 3 editor interactions, graph validation, and persistence contract.
 - [`docs/workflow-engine.md`](docs/workflow-engine.md) — Node Types, Graph Execution, and Logging Specs.
 - [`docs/roadmap.md`](docs/roadmap.md) — Multi-Phase Development Roadmap.
 

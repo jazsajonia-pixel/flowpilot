@@ -61,12 +61,12 @@ FlowPilot AI
 - **State Management & Data Fetching:** TanStack Query (`@tanstack/react-query`) for API querying, caching, and optimistic updates.
 - **Form Management:** `react-hook-form` paired with `zod` for type-safe schema validation.
 - **UI & Styling:** Tailwind CSS, shadcn/ui component patterns, and `lucide-react` icons.
-- **Visual Graph Editor:** `reactflow` (React Flow) for interactive node connection, drag-and-drop workflow construction, and real-time step inspection.
+- **Visual Graph Editor:** `@xyflow/react` (React Flow) for interactive node connection, drag-and-drop workflow construction, and node inspection.
 
 ### 2.2 API & Serverless Backend
 - **Platform:** Netlify Functions (Node.js REST API serverless endpoints).
 - **Validation:** Server-side request parsing and validation using Zod.
-- **Security:** Phase 2C establishes server-side email/password authentication and revocable cookie sessions. Phase 2D protects workflow metadata endpoints with owner-scoped database queries; placeholder UI pages and future graph, execution, integration, and credential routes still need protection as they are built. Credential encryption remains a later phase.
+- **Security:** Phase 2C establishes server-side email/password authentication and revocable cookie sessions. Phases 2D and 3 protect workflow metadata and graph endpoints with owner-scoped database queries. Placeholder UI pages and future execution, integration, and credential routes still need protection as they are built. Credential encryption remains a later phase.
 
 ### 2.3 Database Layer (Server-Side Serverless Access)
 ```
@@ -84,7 +84,7 @@ Netlify Database (PostgreSQL)
 - **Native Adapter:** Server-side database operations use Netlify's native Drizzle adapter (`drizzle-orm/netlify-db` via `@netlify/db`).
 - **Strict Boundary:** Database access logic (`src/db/`) is restricted exclusively to server-side Netlify Functions.
 - **Zero Client Exposure:** Database credentials and connection strings are never exposed to Vite client bundles or React UI code.
-- **Schema & Migrations:** Managed with Drizzle ORM and `drizzle-kit`, configured with migration outputs under `netlify/database/migrations/`. Phase 2B defines the core application entities; Phase 2C adds password-hash and session storage; Phase 2D applies owner-scoped access to workflow metadata. See [`database-schema.md`](database-schema.md), [`authentication.md`](authentication.md), and [`workflow-api.md`](workflow-api.md) for data and security boundaries.
+- **Schema & Migrations:** Managed with Drizzle ORM and `drizzle-kit`, configured with migration outputs under `netlify/database/migrations/`. Phase 2B defines the core application entities; Phase 2C adds password-hash and session storage; Phases 2D and 3 apply owner-scoped access to workflow metadata and graph persistence. See [`database-schema.md`](database-schema.md), [`authentication.md`](authentication.md), [`workflow-api.md`](workflow-api.md), and [`workflow-builder.md`](workflow-builder.md) for data and security boundaries.
 - **Production Verification:** Remote production database query execution requires an active linked Netlify Database environment.
 
 ### 2.4 AI Provider Layer

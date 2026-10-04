@@ -31,16 +31,18 @@ This document outlines the sequential phases for building FlowPilot AI.
 - Create revocable, expiring server-side sessions with hashed opaque cookie tokens.
 - Add current-session and logout endpoints; do not add protected-resource authorization in this phase.
 
-### Phase 2D: Protected API & Ownership Verification (IN REVIEW)
+### Phase 2D: Protected API & Ownership Verification (COMPLETE)
 - Add authenticated workflow metadata list/create/read/update/delete endpoints.
 - Derive ownership from the verified session and scope every item query/mutation by both workflow ID and owner ID.
 - Validate all mutation payloads and reject client-supplied identity/ownership fields.
-- Preserve execution history when workflows are deleted; graph editing and execution remain later phases.
+- Preserve execution history when workflows are deleted; graph editing follows in Phase 3 and execution remains later.
 
-### Phase 3: Visual Workflow Builder (NEXT AFTER PHASE 2D)
-- Integrate React Flow for interactive canvas editing.
-- Implement custom node component rendering (Triggers, AI, Logic, Actions).
-- Implement node property sidebar inspector, drag-and-drop node adding, connection validation, and workflow state persistence.
+### Phase 3: Visual Workflow Builder (IN REVIEW)
+- Integrate React Flow (`@xyflow/react`) for interactive canvas editing and custom trigger, AI, logic, and action nodes.
+- Add a node library with tap-to-add and drag-and-drop, plus a node inspector for label editing.
+- Validate connections (no self-links, duplicate links, trigger targets, or cycles) and allow at most one trigger.
+- Persist graph positions, nodes, and connections through an authenticated, owner-scoped API with atomic replacement.
+- Keep activation, execution, and node-specific credentials/settings out of scope.
 
 ### Phase 4: Workflow Execution Engine
 - Implement topological graph execution engine in Netlify Functions.

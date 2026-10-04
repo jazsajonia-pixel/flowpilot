@@ -23,6 +23,53 @@ export type NodeCategory =
   | 'update_db_record'
   | 'webhook_action';
 
+export interface WorkflowNodeDefinition {
+  type: NodeType;
+  category: NodeCategory;
+  label: string;
+  description: string;
+}
+
+export const NODE_CATALOG: readonly WorkflowNodeDefinition[] = [
+  { type: 'trigger', category: 'manual_trigger', label: 'Manual Trigger', description: 'Start a workflow manually.' },
+  { type: 'trigger', category: 'webhook_trigger', label: 'Webhook Trigger', description: 'Start when an external event calls a webhook.' },
+  { type: 'trigger', category: 'schedule_trigger', label: 'Schedule Trigger', description: 'Start on a schedule.' },
+  { type: 'ai', category: 'gemini_ai', label: 'Gemini AI', description: 'Generate text with an AI model.' },
+  { type: 'ai', category: 'ai_classification', label: 'AI Classification', description: 'Classify text into categories.' },
+  { type: 'ai', category: 'ai_extraction', label: 'AI Extraction', description: 'Extract structured details from text.' },
+  { type: 'ai', category: 'ai_summarization', label: 'AI Summarization', description: 'Summarize text.' },
+  { type: 'ai', category: 'ai_generation', label: 'AI Generation', description: 'Generate a creative response.' },
+  { type: 'logic', category: 'condition', label: 'Condition', description: 'Branch based on a condition.' },
+  { type: 'logic', category: 'switch', label: 'Switch', description: 'Route between multiple cases.' },
+  { type: 'logic', category: 'filter', label: 'Filter', description: 'Filter values before continuing.' },
+  { type: 'logic', category: 'delay', label: 'Delay', description: 'Pause before the next step.' },
+  { type: 'action', category: 'send_email', label: 'Send Email', description: 'Send an email notification.' },
+  { type: 'action', category: 'http_request', label: 'HTTP Request', description: 'Call an external HTTP endpoint.' },
+  { type: 'action', category: 'create_db_record', label: 'Create Database Record', description: 'Create a record in a connected database.' },
+  { type: 'action', category: 'update_db_record', label: 'Update Database Record', description: 'Update a record in a connected database.' },
+  { type: 'action', category: 'webhook_action', label: 'Webhook Action', description: 'Send an outgoing webhook.' },
+];
+
+export const NODE_TYPE_BY_CATEGORY: Record<NodeCategory, NodeType> = {
+  manual_trigger: 'trigger',
+  webhook_trigger: 'trigger',
+  schedule_trigger: 'trigger',
+  gemini_ai: 'ai',
+  ai_classification: 'ai',
+  ai_extraction: 'ai',
+  ai_summarization: 'ai',
+  ai_generation: 'ai',
+  condition: 'logic',
+  switch: 'logic',
+  filter: 'logic',
+  delay: 'logic',
+  send_email: 'action',
+  http_request: 'action',
+  create_db_record: 'action',
+  update_db_record: 'action',
+  webhook_action: 'action',
+};
+
 export interface WorkflowNode {
   id: string;
   type: NodeType;
