@@ -20,8 +20,9 @@ const comparisonOptions = [
 
 export function NodeConfigurationEditor({ node, onChange }: NodeConfigurationEditorProps) {
   const config = node.data.config;
-  const update = (key: string, value: string) => onChange({ ...config, [key]: value });
-  const textField = (key: string) => typeof config[key] === 'string' ? config[key] as string : '';
+  const update = (key: string, value: unknown) => onChange({ ...config, [key]: value });
+  const textField = (key: string) => typeof config[key] === 'string' ? config[key] as string : typeof config[key] === 'number' ? String(config[key]) : '';
+  const updateNumber = (key: string, value: string) => update(key, value === '' ? undefined : Number(value));
   const operator = textField('operator');
   const isPresenceCheck = operator === 'is_empty' || operator === 'is_not_empty';
 
@@ -130,5 +131,126 @@ export function NodeConfigurationEditor({ node, onChange }: NodeConfigurationEdi
     );
   }
 
-  return <p className="rounded-lg border bg-muted/40 p-3 text-xs leading-5 text-muted-foreground">This node is not executable in Phase 4. AI nodes arrive in Phase 5; other triggers and integrations are later phases.</p>;
+  if (node.data.category === 'gemini_ai') {
+    const jsonOutput = textField('outputFormat') === 'json';
+    return (
+      <div className="space-y-3">
+        <label className="block space-y-1.5 text-xs font-medium">
+          Prompt
+          <textarea value={textField('prompt')} maxLength={16_384} rows={5} placeholder={'Summarize this: {{trigger.body.text}}'} onChange={(event) => update('prompt', event.target.value)} className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 font-mono text-xs" />
+        </label>
+        <label className="block space-y-1.5 text-xs font-medium">
+          System instruction (optional)
+          <textarea value={textField('systemInstruction')} maxLength={4_096} rows={3} placeholder="Answer clearly and concisely." onChange={(event) => update('systemInstruction', event.target.value)} className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-xs" />
+        </label>
+        <label className="block space-y-1.5 text-xs font-medium">
+          Output format
+          <select value={textField('outputFormat') || 'text'} onChange={(event) => update('outputFormat', event.target.value)} className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+            <option value="text">Text</option>
+            <option value="json">JSON</option>
+          </select>
+        </label>
+        {jsonOutput && (
+          <label className="block space-y-1.5 text-xs font-medium">
+            JSON Schema (optional)
+            <textarea value={textField('responseSchema')} maxLength={8_192} rows={5} placeholder={'{"type":"object","properties":{"answer":{"type":"string"}},"required":["answer"],"additionalProperties":false}'} onChange={(event) => update('responseSchema', event.target.value)} className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 font-mono text-xs" />
+          </label>
+        )}
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block space-y-1.5 text-xs font-medium">
+            Temperature
+            <Input type="number" min="0" max="2" step="0.1" value={textField('temperature')} onChange={(event) => updateNumber('temperature', event.target.value)} />
+          </label>
+          <label className="block space-y-1.5 text-xs font-medium">
+            Max output tokens
+            <Input type="number" min="1" max="2048" step="1" value={textField('maxTokens')} onChange={(event) => updateNumber('maxTokens', event.target.value)} />
+          </label>
+        </div>
+        <p className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-[11px] leading-5 text-sky-950">Uses the FlowPilot Gemini provider on the server. The API key is never entered in the browser; execution logs contain summaries only.</p>
+      </div>
+    );
+  }
+
+  if (node.data.category === 'ai_generation') {
+    return (
+      <div className="space-y-3">
+        <label className="block space-y-1.5 text-xs font-medium">
+          Prompt
+          <textarea value={textField('prompt')} maxLength={16_384} rows={5} placeholder="Write a helpful reply to {{trigger.body.name}}." onChange={(event) => update('prompt', event.target.value)} className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 font-mono text-xs" />
+        </label>
+        <label className="block space-y-1.5 text-xs font-medium">
+          System instruction (optional)
+          <textarea value={textField('systemInstruction')} maxLength={4_096} rows={3} onChange={(event) => update('systemInstruction', event.target.value)} className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-xs" />
+        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block space-y-1.5 text-xs font-medium">
+            Temperature
+            <Input type="number" min="0" max="2" step="0.1" value={textField('temperature')} onChange={(event) => updateNumber('temperature', event.target.value)} />
+          </label>
+          <label className="block space-y-1.5 text-xs font-medium">
+            Max output tokens
+            <Input type="number" min="1" max="2048" step="1" value={textField('maxTokens')} onChange={(event) => updateNumber('maxTokens', event.target.value)} />
+          </label>
+        </div>
+        <p className="text-[11px] leading-5 text-muted-foreground">The response is available to later nodes as <code>{'{{steps.NODE_ID.result}}'}</code>.</p>
+      </div>
+    );
+  }
+
+  if (node.data.category === 'ai_classification') {
+    const labels = Array.isArray(config.labels) ? config.labels.filter((value): value is string => typeof value === 'string') : [];
+    return (
+      <div className="space-y-3">
+        <label className="block space-y-1.5 text-xs font-medium">
+          Text to classify
+          <textarea value={textField('input')} maxLength={16_384} rows={4} placeholder="{{trigger.body.message}}" onChange={(event) => update('input', event.target.value)} className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 font-mono text-xs" />
+        </label>
+        <label className="block space-y-1.5 text-xs font-medium">
+          Allowed labels (one per line)
+          <textarea value={labels.join('\n')} maxLength={3_200} rows={4} placeholder={'urgent\nnormal\nspam'} onChange={(event) => update('labels', event.target.value.split('\n').map((label) => label.trim()).filter(Boolean))} className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-xs" />
+        </label>
+        <p className="text-[11px] leading-5 text-muted-foreground">Returns a JSON object with a label and confidence score from 0 to 1.</p>
+      </div>
+    );
+  }
+
+  if (node.data.category === 'ai_extraction') {
+    return (
+      <div className="space-y-3">
+        <label className="block space-y-1.5 text-xs font-medium">
+          Source text
+          <textarea value={textField('input')} maxLength={16_384} rows={4} placeholder="{{trigger.body.document}}" onChange={(event) => update('input', event.target.value)} className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 font-mono text-xs" />
+        </label>
+        <label className="block space-y-1.5 text-xs font-medium">
+          Extraction instruction (optional)
+          <Input value={textField('instruction')} maxLength={4_096} placeholder="Extract the person, date, and amount." onChange={(event) => update('instruction', event.target.value)} />
+        </label>
+        <label className="block space-y-1.5 text-xs font-medium">
+          Required JSON Schema
+          <textarea value={textField('responseSchema')} maxLength={8_192} rows={6} placeholder={'{"type":"object","properties":{"person":{"type":"string"}},"required":["person"],"additionalProperties":false}'} onChange={(event) => update('responseSchema', event.target.value)} className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 font-mono text-xs" />
+        </label>
+      </div>
+    );
+  }
+
+  if (node.data.category === 'ai_summarization') {
+    return (
+      <div className="space-y-3">
+        <label className="block space-y-1.5 text-xs font-medium">
+          Content to summarize
+          <textarea value={textField('input')} maxLength={16_384} rows={5} placeholder="{{trigger.body.text}}" onChange={(event) => update('input', event.target.value)} className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 font-mono text-xs" />
+        </label>
+        <label className="block space-y-1.5 text-xs font-medium">
+          Summary style
+          <select value={textField('style') || 'brief'} onChange={(event) => update('style', event.target.value)} className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+            <option value="brief">Brief</option>
+            <option value="detailed">Detailed</option>
+            <option value="bullets">Bullets</option>
+          </select>
+        </label>
+      </div>
+    );
+  }
+
+  return <p className="rounded-lg border bg-muted/40 p-3 text-xs leading-5 text-muted-foreground">This node is not executable in Phase 5. Other triggers and integrations are planned for later phases.</p>;
 }

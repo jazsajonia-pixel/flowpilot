@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { validateWorkflowConnections } from '../../lib/workflow-graph';
 import { NODE_CATALOG, NODE_TYPE_BY_CATEGORY, type NodeCategory } from '../../types/workflow';
+import { parseResponseJsonSchema } from '../ai/json-schema';
 import { workflowIdSchema } from './validation';
 
 const nodeTypes = ['trigger', 'ai', 'logic', 'action'] as const;
@@ -59,15 +60,64 @@ const webhookActionConfigSchema = z
   })
   .strict();
 
+const aiCommonConfigSchema = z.object({
+  prompt: z.string().max(16_384).optional(),
+  systemInstruction: z.string().max(4_096).optional(),
+  temperature: z.number().finite().min(0).max(2).optional(),
+  maxTokens: z.number().int().min(1).max(2_048).optional(),
+});
+
+const geminiAIConfigSchema = aiCommonConfigSchema.extend({
+  outputFormat: z.enum(['text', 'json']).optional(),
+  responseSchema: z.string().max(8_192).optional(),
+}).strict().superRefine((config, context) => {
+  if (config.responseSchema?.trim() && config.outputFormat !== 'json') {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: 'A response schema requires JSON output.', path: ['outputFormat'] });
+  }
+  if (config.responseSchema?.trim()) {
+    try {
+      parseResponseJsonSchema(config.responseSchema);
+    } catch {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: 'The response schema must be supported JSON Schema.', path: ['responseSchema'] });
+    }
+  }
+});
+
+const aiClassificationConfigSchema = z.object({
+  input: z.string().max(16_384).optional(),
+  labels: z.array(z.string().trim().min(1).max(80)).max(40).optional(),
+}).strict();
+
+const aiExtractionConfigSchema = z.object({
+  input: z.string().max(16_384).optional(),
+  instruction: z.string().max(4_096).optional(),
+  responseSchema: z.string().max(8_192).optional(),
+}).strict().superRefine((config, context) => {
+  if (config.responseSchema?.trim()) {
+    try {
+      parseResponseJsonSchema(config.responseSchema);
+    } catch {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: 'The response schema must be supported JSON Schema.', path: ['responseSchema'] });
+    }
+  }
+});
+
+const aiSummarizationConfigSchema = z.object({
+  input: z.string().max(16_384).optional(),
+  style: z.enum(['brief', 'detailed', 'bullets']).optional(),
+}).strict();
+
+const aiGenerationConfigSchema = aiCommonConfigSchema.strict();
+
 const configSchemaByCategory: Record<NodeCategory, z.ZodTypeAny> = {
   manual_trigger: emptyConfigSchema,
   webhook_trigger: emptyConfigSchema,
   schedule_trigger: emptyConfigSchema,
-  gemini_ai: emptyConfigSchema,
-  ai_classification: emptyConfigSchema,
-  ai_extraction: emptyConfigSchema,
-  ai_summarization: emptyConfigSchema,
-  ai_generation: emptyConfigSchema,
+  gemini_ai: geminiAIConfigSchema,
+  ai_classification: aiClassificationConfigSchema,
+  ai_extraction: aiExtractionConfigSchema,
+  ai_summarization: aiSummarizationConfigSchema,
+  ai_generation: aiGenerationConfigSchema,
   condition: conditionConfigSchema,
   switch: emptyConfigSchema,
   filter: filterConfigSchema,

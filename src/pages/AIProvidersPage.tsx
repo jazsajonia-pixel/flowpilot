@@ -7,23 +7,23 @@ export function AIProvidersPage() {
   const providers = [
     {
       name: "FlowPilot Gemini (Built-in)",
-      type: "Default Platform Provider",
-      description: "Default built-in Google Gemini AI model provided out of the box.",
-      status: "Active",
+      type: "Server-managed provider",
+      description: "Uses the server GEMINI_API_KEY environment variable; no API key is entered in the browser.",
+      status: "Environment-managed",
       isDefault: true,
     },
     {
       name: "Google Gemini (BYO Key)",
       type: "Bring Your Own Key",
-      description: "Connect your personal or enterprise Google Gemini API key.",
-      status: "Not Configured",
+      description: "User-managed Gemini credentials and model selection are planned for Phase 6.",
+      status: "Planned",
       isDefault: false,
     },
     {
       name: "OpenAI (BYO Key)",
       type: "Bring Your Own Key",
-      description: "Connect your OpenAI API key for GPT-4o and GPT-3.5 models.",
-      status: "Not Configured",
+      description: "User-managed OpenAI credentials and model selection are planned for Phase 6.",
+      status: "Planned",
       isDefault: false,
     },
   ];
@@ -34,7 +34,7 @@ export function AIProvidersPage() {
       <div>
         <h2 className="text-xl font-bold tracking-tight text-foreground">AI Providers</h2>
         <p className="text-sm text-muted-foreground">
-          Manage platform default AI models and bring-your-own custom API credentials.
+          Review the server-managed default provider and planned user-managed integrations.
         </p>
       </div>
 
@@ -63,10 +63,10 @@ export function AIProvidersPage() {
                 variant={provider.isDefault ? "secondary" : "outline"}
                 size="sm"
                 className="w-full gap-2 text-xs"
-                disabled={provider.isDefault}
+                disabled
               >
                 <Key className="h-3.5 w-3.5" />
-                {provider.isDefault ? "Default Active" : "Configure API Key"}
+                {provider.isDefault ? "Server-managed" : "Planned for Phase 6"}
               </Button>
             </CardContent>
           </Card>
@@ -87,10 +87,10 @@ export function AIProvidersPage() {
         <CardContent>
           <div className="rounded-lg border border-border bg-muted/30 p-4 text-xs text-muted-foreground space-y-2">
             <p>
-              • <strong>Credential Vault:</strong> Encrypted API-key storage and server-side execution are planned for Phase 6 and are not implemented yet. Do not enter real keys in this prototype.
+              • <strong>Built-in provider:</strong> Gemini reads <code>GEMINI_API_KEY</code> only from the server environment. Configure it in the server/deployment environment; never add it to workflow settings or browser code.
             </p>
             <p>
-              • <strong>Zero Client Exposure:</strong> The future credential vault will keep secrets out of the frontend browser environment.
+              • <strong>BYO credentials:</strong> Encrypted user-key storage, OpenAI support, and model selection are Phase 6 work. AI prompts and generated responses are omitted from execution logs.
             </p>
           </div>
         </CardContent>

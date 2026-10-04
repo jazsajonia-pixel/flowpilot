@@ -1,6 +1,8 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
+import type { AIProvider } from '../src/types/ai';
 import type { WorkflowGraphInput } from '../src/server/workflows/graph-validation';
+import { AIProviderError } from '../src/server/ai/gemini-provider';
 import { executeWorkflowGraph } from '../src/server/execution/engine';
 import { summarizeTriggerInput } from '../src/server/execution/logging';
 import {
@@ -100,14 +102,20 @@ test('filter output is typed into a downstream JSON webhook body without logging
   assert.equal(JSON.stringify(result.logs).includes('second'), false);
 });
 
-test('unsupported AI nodes fail safely without logging prompts or exception details', async () => {
+test('AI nodes fail safely when the server Gemini provider is not configured', async () => {
   const graph: WorkflowGraphInput = {
     nodes: [node(ids.trigger, 'manual_trigger'), node(ids.ai, 'gemini_ai', { prompt: 'never log this private prompt' })],
     connections: [edge('c18b6c07-750c-4be1-a1e0-8b1a5f2e0031', ids.trigger, ids.ai)],
   };
-  const result = await executeWorkflowGraph(graph, {});
+  const missingProvider: AIProvider = {
+    id: 'test',
+    name: 'Test provider',
+    generateCompletion: async () => { throw new AIProviderError('The built-in Gemini provider is not configured.'); },
+  };
+  const result = await executeWorkflowGraph(graph, {}, { aiProvider: missingProvider });
 
   assert.equal(result.status, 'failed');
+  assert.equal(result.error, 'The built-in Gemini provider is not configured.');
   assert.equal(result.logs.find((log) => log.nodeId === ids.ai)?.status, 'error');
   assert.equal(JSON.stringify(result).includes('never log this private prompt'), false);
 });
@@ -186,4 +194,87 @@ test('outbound body limits apply before DNS and DNS stalls time out without open
     sendPublicHttpsRequest('https://example.com', 'GET', undefined, 5, async () => new Promise(() => undefined)),
     /DNS resolution timed out/,
   );
+});
+
+test('all Phase 5 AI node types resolve templates, parse structured results, and keep content out of logs', async () => {
+  const extractionSchema = JSON.stringify({
+    type: 'object',
+    properties: { name: { type: 'string' } },
+    required: ['name'],
+    additionalProperties: false,
+  });
+  const genericSchema = JSON.stringify({
+    type: 'object',
+    properties: { response: { type: 'string' } },
+    required: ['response'],
+    additionalProperties: false,
+  });
+  const cases: Array<{
+    category: string;
+    config: Record<string, unknown>;
+    response: string;
+    outputFormat: 'text' | 'json';
+  }> = [
+    {
+      category: 'gemini_ai',
+      config: { prompt: 'Process {{trigger.body.message}}', outputFormat: 'json', responseSchema: genericSchema },
+      response: '{"response":"private generated response"}',
+      outputFormat: 'json',
+    },
+    {
+      category: 'ai_generation',
+      config: { prompt: 'Reply to {{trigger.body.message}}' },
+      response: 'private generated response',
+      outputFormat: 'text',
+    },
+    {
+      category: 'ai_classification',
+      config: { input: '{{trigger.body.message}}', labels: ['billing', 'support'] },
+      response: '{"label":"support","confidence":0.9}',
+      outputFormat: 'json',
+    },
+    {
+      category: 'ai_extraction',
+      config: { input: '{{trigger.body.message}}', responseSchema: extractionSchema },
+      response: '{"name":"private extracted value"}',
+      outputFormat: 'json',
+    },
+    {
+      category: 'ai_summarization',
+      config: { input: '{{trigger.body.message}}', style: 'bullets' },
+      response: 'private generated response',
+      outputFormat: 'text',
+    },
+  ];
+
+  for (const [index, fixture] of cases.entries()) {
+    let capturedPrompt = '';
+    let capturedFormat: 'text' | 'json' | undefined;
+    const provider: AIProvider = {
+      id: 'test-provider',
+      name: 'Test provider',
+      generateCompletion: async (input) => {
+        capturedPrompt = input.prompt;
+        capturedFormat = input.outputFormat;
+        return {
+          text: fixture.response,
+          model: 'gemini-3.8-flash',
+          usage: { promptTokens: 4, completionTokens: 2, totalTokens: 6 },
+        };
+      },
+    };
+    const graph: WorkflowGraphInput = {
+      nodes: [node(ids.trigger, 'manual_trigger'), node(ids.ai, fixture.category, fixture.config)],
+      connections: [edge(`c18b6c07-750c-4be1-a1e0-8b1a5f2e01${String(index + 1).padStart(2, '0')}`, ids.trigger, ids.ai)],
+    };
+    const result = await executeWorkflowGraph(graph, { body: { message: 'private source text' } }, { aiProvider: provider });
+
+    assert.equal(result.status, 'completed', fixture.category);
+    assert.equal(capturedPrompt.includes('private source text'), true, fixture.category);
+    assert.equal(capturedFormat, fixture.outputFormat, fixture.category);
+    assert.equal(JSON.stringify(result).includes('private source text'), false, fixture.category);
+    assert.equal(JSON.stringify(result).includes('private generated response'), false, fixture.category);
+    assert.equal(JSON.stringify(result).includes('private extracted value'), false, fixture.category);
+    assert.deepEqual(result.logs.find((log) => log.nodeId === ids.ai)?.outputData && (result.logs.find((log) => log.nodeId === ids.ai)?.outputData as Record<string, unknown>).model, 'gemini-3.8-flash');
+  }
 });
