@@ -134,8 +134,8 @@ FlowPilot AI
 7. **Phase 3:** Visual Workflow Builder (React Flow) *(Completed)*
 8. **Phase 4:** Workflow Execution Engine *(Completed)*
 9. **Phase 5:** Gemini AI Integration *(Completed)*
-10. **Phase 6:** Bring Your Own AI (BYO AI) *(In progress)*
-11. **Phase 7:** Automation Integrations & Webhooks
+10. **Phase 6:** Bring Your Own AI (BYO AI) *(Completed)*
+11. **Phase 7:** Automation Integrations & Webhooks *(In progress)*
 12. **Phase 8:** Execution Monitoring & Reliability
 13. **Phase 9:** Security, Testing & Production Hardening
 14. **Phase 10:** Final UI/UX & Portfolio Polish

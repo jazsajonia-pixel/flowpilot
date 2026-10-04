@@ -51,7 +51,7 @@ This document outlines the sequential phases for building FlowPilot AI.
 - Persist execution status and privacy-minimized per-node logs; expose a manual Run dialog and status summary in the editor.
 - Restrict outbound requests to public HTTPS on port 443 with all-address DNS checks, pinned address, no redirects, and request/response/time limits.
 - Add unit tests for execution branches, filters, interpolation, unsupported nodes, and outbound destination validation.
-- Keep runs synchronous and capped (50 graph nodes, 25 executed steps, five-second graph budget). No live database integration or production deployment was performed.
+- Keep runs synchronous and capped (50 graph nodes, 25 executed steps, eight-second graph budget). No live database integration or production deployment was performed.
 
 ### Phase 5: Gemini AI Integration (COMPLETE)
 - Implement the default server-side Gemini provider with the official `@google/genai` SDK, `GEMINI_API_KEY`, and the stable `gemini-3.8-flash` default.
@@ -60,14 +60,14 @@ This document outlines the sequential phases for building FlowPilot AI.
 - Provide node-specific configuration editors without exposing provider keys or arbitrary model selection in workflow data.
 - Validate with deterministic fake-provider unit tests; no live API key, paid model request, database integration, or deployment is used.
 
-### Phase 6: Bring Your Own AI (BYO AI) (IN PROGRESS)
+### Phase 6: Bring Your Own AI (BYO AI) (COMPLETE)
 - Encrypt user-managed Gemini and OpenAI API keys at rest in the existing credentials table; expose only masked metadata and credential IDs to the client.
 - Resolve AI providers server-side after session-derived owner verification; support user-provided Gemini and OpenAI keys through the shared provider interface.
 - Add credential management and curated provider-specific model selection to the UI and workflow nodes.
 - Keep arbitrary custom endpoints disabled until credentialed outbound requests receive a separate SSRF, DNS-pinning, and credential-exfiltration review; custom provider adapters remain a code-level extension point.
 - Validate with deterministic tests only; do not make live provider calls or deploy during implementation.
 
-### Phase 7: Automation Integrations & Triggers
+### Phase 7: Automation Integrations & Triggers (IN PROGRESS)
 - Implement Webhook Trigger endpoint receiver with dynamic path routing.
 - Implement Schedule / Cron Trigger system.
 - Build Email notification action nodes and database CRUD action nodes.
