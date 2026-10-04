@@ -32,7 +32,7 @@ Deleting a user cascades to that user's integrations and credentials. Deleting a
 - `credentials.encrypted_payload` is an opaque storage field. Phase 2B provides no encryption implementation and no code should write plaintext secrets there. Encryption, key management, masking, and access controls must be implemented and reviewed in their designated later phases.
 - `integrations.settings` is for non-secret configuration only.
 - Execution trigger/log JSONB may contain sensitive or personal data. Redaction, retention, and access controls are not implemented by the schema and must be addressed before execution features are enabled.
-- Email uniqueness is enforced by the database, but normalization and authentication behavior are deferred to Phase 2C.
+- Registration/login normalize email addresses to lowercase before lookup and insert. The database index itself is exact-case; any direct SQL or future non-auth write path must also store canonical lowercase email values.
 
 ## Migration and verification
 

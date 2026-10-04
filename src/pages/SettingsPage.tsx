@@ -46,7 +46,7 @@ export function SettingsPage() {
             <Shield className="h-4 w-4 text-primary" />
             Security & Authentication
           </CardTitle>
-          <CardDescription>Manage security policies and encrypted credential preferences</CardDescription>
+          <CardDescription>Security policies and credential management are being built in later phases</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="rounded-lg border border-border bg-muted/30 p-4 text-xs text-muted-foreground space-y-2">
@@ -55,7 +55,7 @@ export function SettingsPage() {
               Encrypted Credential Vault
             </div>
             <p>
-              FlowPilot stores user API credentials encrypted at rest on Netlify Database. Serverless Netlify Functions handle execution without exposing keys to client code.
+              The encrypted credential vault is planned for Phase 6 and is not implemented yet. Do not store real API keys in this prototype.
             </p>
           </div>
         </CardContent>

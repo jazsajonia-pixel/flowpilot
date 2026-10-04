@@ -11,8 +11,8 @@ FlowPilot AI is a modern, web-based visual automation platform that enables user
 - **Phase 0 — Project Constitution & Architecture:** COMPLETE
 - **Phase 1 — Application Foundation:** COMPLETE
 - **Phase 2A — Database Infrastructure + Drizzle + Netlify Database:** COMPLETE
-- **Phase 2B — Application Database Schema:** IN REVIEW
-- **Phase 2C — Authentication & Sessions:** NEXT AFTER PHASE 2B
+- **Phase 2B — Application Database Schema:** COMPLETE
+- **Phase 2C — Authentication & Sessions:** COMPLETE
 
 ---
 
@@ -102,7 +102,7 @@ FlowPilot AI
     ├── Users & Auth
     ├── Workflows & Nodes
     ├── Executions & Step Logs
-    └── Credentials (Encrypted)
+    ├── Credentials (schema only; encryption is planned)
 ```
 
 ---
@@ -111,9 +111,9 @@ FlowPilot AI
 
 - **Zero Secrets in Client:** API keys and database credentials are never exposed to frontend code or client bundles.
 - **Git Hygiene:** Secrets and `.env` files are strictly excluded from source control. Template configuration is provided in `.env.example`.
-- **Server-Side Credential & Database Handling:** Database queries and third-party user API keys are handled strictly server-side in Netlify Functions and encrypted at rest in Netlify Database.
+- **Server-Side Credential & Database Handling:** Database queries run in Netlify Functions. Credential encryption and secret-management endpoints are planned for Phase 6 and are not yet implemented.
 - **Strict Payload Validation:** All API requests are validated with **Zod** schemas.
-- **Server-Side Authorization:** Workflow ownership and authorization are enforced strictly server-side.
+- **Server-Side Authentication & Authorization:** Phase 2C verifies identity with server-side sessions. Protected API routes and workflow ownership checks are Phase 2D and are not yet implemented; client-side session display is not access control.
 - **Credential Masking:** Sensitive tokens are masked in UI and logs (`sk-••••••••1234`).
 
 ---
@@ -123,9 +123,9 @@ FlowPilot AI
 1. **Phase 0:** Project Constitution & Architecture *(Completed)*
 2. **Phase 1:** Application Foundation *(Completed)*
 3. **Phase 2A:** Database Infrastructure + Drizzle + Netlify Database *(Completed)*
-4. **Phase 2B:** Application Database Schema *(In review)*
-5. **Phase 2C:** Authentication & Sessions *(Next after Phase 2B)*
-6. **Phase 2D:** Protected API & Ownership Verification
+4. **Phase 2B:** Application Database Schema *(Completed)*
+5. **Phase 2C:** Authentication & Sessions *(Completed)*
+6. **Phase 2D:** Protected API & Ownership Verification *(Next)*
 7. **Phase 3:** Visual Workflow Builder (React Flow)
 8. **Phase 4:** Workflow Execution Engine
 9. **Phase 5:** Gemini AI Integration
@@ -144,6 +144,7 @@ See [`docs/roadmap.md`](docs/roadmap.md) for full details.
 - [`AGENTS.md`](AGENTS.md) — AI Coding Rules, Development Principles, and Security Mandates.
 - [`docs/architecture.md`](docs/architecture.md) — Detailed Architecture and Data Flow Specs.
 - [`docs/database-schema.md`](docs/database-schema.md) — Phase 2B database tables, relationships, and security boundaries.
+- [`docs/authentication.md`](docs/authentication.md) — Phase 2C account authentication, cookie sessions, and security boundaries.
 - [`docs/workflow-engine.md`](docs/workflow-engine.md) — Node Types, Graph Execution, and Logging Specs.
 - [`docs/roadmap.md`](docs/roadmap.md) — Multi-Phase Development Roadmap.
 
@@ -158,8 +159,14 @@ npm install
 # Run type checks
 npm run lint
 
+# Run authentication security unit tests
+npm test
+
 # Run Vite dev server
 npm run dev
+
+# Netlify Function API routes (including /api/auth/*) require Netlify Dev
+# Run `npx netlify dev` when the Netlify CLI is available/configured
 
 # Build for production
 npm run build
