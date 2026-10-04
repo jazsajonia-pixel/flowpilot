@@ -13,6 +13,7 @@ FlowPilot AI is a modern, web-based visual automation platform that enables user
 - **Phase 2A — Database Infrastructure + Drizzle + Netlify Database:** COMPLETE
 - **Phase 2B — Application Database Schema:** COMPLETE
 - **Phase 2C — Authentication & Sessions:** COMPLETE
+- **Phase 2D — Protected API & Ownership Verification:** COMPLETE
 
 ---
 
@@ -113,7 +114,7 @@ FlowPilot AI
 - **Git Hygiene:** Secrets and `.env` files are strictly excluded from source control. Template configuration is provided in `.env.example`.
 - **Server-Side Credential & Database Handling:** Database queries run in Netlify Functions. Credential encryption and secret-management endpoints are planned for Phase 6 and are not yet implemented.
 - **Strict Payload Validation:** All API requests are validated with **Zod** schemas.
-- **Server-Side Authentication & Authorization:** Phase 2C verifies identity with server-side sessions. Protected API routes and workflow ownership checks are Phase 2D and are not yet implemented; client-side session display is not access control.
+- **Server-Side Authentication & Authorization:** Workflow metadata endpoints require server-verified sessions and owner-scoped queries. Placeholder frontend pages are not protected, and client-side session display is not access control.
 - **Credential Masking:** Sensitive tokens are masked in UI and logs (`sk-••••••••1234`).
 
 ---
@@ -125,7 +126,7 @@ FlowPilot AI
 3. **Phase 2A:** Database Infrastructure + Drizzle + Netlify Database *(Completed)*
 4. **Phase 2B:** Application Database Schema *(Completed)*
 5. **Phase 2C:** Authentication & Sessions *(Completed)*
-6. **Phase 2D:** Protected API & Ownership Verification *(Next)*
+6. **Phase 2D:** Protected API & Ownership Verification *(Completed)*
 7. **Phase 3:** Visual Workflow Builder (React Flow)
 8. **Phase 4:** Workflow Execution Engine
 9. **Phase 5:** Gemini AI Integration
@@ -145,6 +146,7 @@ See [`docs/roadmap.md`](docs/roadmap.md) for full details.
 - [`docs/architecture.md`](docs/architecture.md) — Detailed Architecture and Data Flow Specs.
 - [`docs/database-schema.md`](docs/database-schema.md) — Phase 2B database tables, relationships, and security boundaries.
 - [`docs/authentication.md`](docs/authentication.md) — Phase 2C account authentication, cookie sessions, and security boundaries.
+- [`docs/workflow-api.md`](docs/workflow-api.md) — Phase 2D protected workflow metadata routes and ownership rules.
 - [`docs/workflow-engine.md`](docs/workflow-engine.md) — Node Types, Graph Execution, and Logging Specs.
 - [`docs/roadmap.md`](docs/roadmap.md) — Multi-Phase Development Roadmap.
 
