@@ -16,9 +16,11 @@ import { Input } from '@/components/ui/input';
 import { WorkflowCanvas } from '@/components/workflow/WorkflowCanvas';
 import type { FlowEdge, FlowNode } from '@/components/workflow/flow-types';
 import { toFlowEdge, toFlowNode, toWorkflowConnection, toWorkflowNode } from '@/components/workflow/graph-mapping';
+import { listAICredentials } from '@/lib/ai-api';
 import { getWorkflow, getWorkflowGraph, runWorkflow, saveWorkflowGraph, updateWorkflowTitle, WorkflowApiError, type WorkflowExecutionSummary, type WorkflowGraph, type WorkflowSummary } from '@/lib/workflow-api';
 import { demoWorkflow, demoWorkflowGraph } from '@/lib/workflow-demo';
 import { isWorkflowConnectionAllowed } from '@/lib/workflow-graph';
+import type { AICredentialSummary } from '@/types/ai';
 import type { WorkflowNodeDefinition } from '@/types/workflow';
 
 interface WorkflowEditorPageProps {
@@ -37,6 +39,7 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
   const { workflowId } = useParams<{ workflowId: string }>();
   const navigate = useNavigate();
   const [workflow, setWorkflow] = useState<WorkflowSummary | null>(null);
+  const [aiCredentials, setAICredentials] = useState<AICredentialSummary[]>([]);
   const [title, setTitle] = useState('');
   const [nodes, setNodes] = useState<FlowNode[]>([]);
   const [edges, setEdges] = useState<FlowEdge[]>([]);
@@ -124,6 +127,18 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
     return () => {
       active = false;
     };
+  }, [demo, workflowId]);
+
+  useEffect(() => {
+    let active = true;
+    if (demo) {
+      setAICredentials([]);
+      return () => { active = false; };
+    }
+    listAICredentials()
+      .then((records) => { if (active) setAICredentials(records); })
+      .catch(() => { if (active) setAICredentials([]); });
+    return () => { active = false; };
   }, [demo, workflowId]);
 
   useEffect(() => {
@@ -473,6 +488,7 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
           nodes={nodes}
           edges={edges}
           selectedNodeId={selectedNodeId}
+          aiCredentials={aiCredentials}
           onNodesChange={handleNodesChange}
           onEdgesChange={handleEdgesChange}
           onConnect={handleConnect}

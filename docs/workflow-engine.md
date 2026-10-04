@@ -1,6 +1,6 @@
 # FlowPilot Workflow Engine
 
-This document describes the implemented Phase 4 and Phase 5 execution contract. The editor can save a larger catalog than the engine can run; only the explicitly supported nodes below are executable today.
+This document describes the implemented Phase 4 and Phase 5 runtime plus Phase 6 BYO provider integration. The editor can save a larger catalog than the engine can run; only the explicitly supported nodes below are executable today.
 
 ## Execution flow
 
@@ -15,7 +15,7 @@ The runner processes each graph node at most once. Nodes with no active incoming
 | Manual Trigger | Starts a user-initiated run with a JSON object as `trigger` data. |
 | Condition | Compares values using equals, not-equals, contains, not-contains, numeric greater/less-than, is-empty, and is-not-empty. True/False handles route the graph. |
 | Filter | Keeps array entries whose configured item field meets one of those comparison operators. The result is exposed as `steps.<node-uuid>.items` and `.count`. |
-| Gemini AI | Sends a templated prompt to the built-in server-side Gemini provider. Supports text output or bounded JSON mode with an optional JSON Schema. |
+| AI Text Generation (`gemini_ai`) | Sends a templated prompt to the selected Gemini provider. Supports text or bounded JSON mode with an optional JSON Schema. |
 | AI Classification | Classifies input against 2–40 configured labels and validates the returned `{ label, confidence }` object. |
 | AI Extraction | Extracts fields using a configured JSON Schema; parsed output is checked locally against that schema. |
 | AI Summarization | Produces a text summary in brief, detailed, or bullet style. |
@@ -23,7 +23,9 @@ The runner processes each graph node at most once. Nodes with no active incoming
 | HTTP Request | GET, POST, PUT, PATCH, or DELETE over restricted outbound HTTPS. GET/DELETE have no request body; other methods may send a JSON body. |
 | Webhook Action | Sends an outgoing HTTPS POST with an optional JSON body. |
 
-The built-in provider uses `@google/genai`, `GEMINI_API_KEY` from the server environment, and `GEMINI_MODEL_ID` or the default `gemini-3.8-flash`. The key and model selection are not workflow configuration fields and are never exposed to the browser. Webhook and Schedule triggers are Phase 7; Switch, Delay, email, and database actions are later work. A reachable unsupported node fails safely at that step.
+AI nodes share the `AIProvider` interface. Gemini can use the built-in server-managed `GEMINI_API_KEY` or a user-owned Gemini credential. OpenAI requires a user-owned OpenAI credential. Credential IDs and curated model IDs are stored with the workflow; plaintext keys are not. The engine resolves each key only after matching credential ID, provider, and owner ID to the signed-in session, then decrypts it in the server function. OpenAI calls use the official Responses API; OpenAI JSON Schema mode requires an object root, every object property in `required`, and `additionalProperties: false` on every object. Arbitrary endpoint URLs are not accepted. Custom adapters remain a code-level extension point, not user-configurable remote URLs.
+
+`GEMINI_MODEL_ID` can override the built-in provider default (`gemini-3.8-flash`) in the server environment. BYO nodes use a provider-specific allowlist; the current defaults are Gemini 3.8 Flash and GPT-6 Luna. Model catalogs are maintained in `src/types/ai.ts`. Provider credentials and model APIs are not called during graph save or preview.
 
 ## Execution context and templates
 
@@ -34,19 +36,21 @@ HTTP/webhook request bodies are configured as JSON text. The engine parses JSON 
 ## Limits and outbound safeguards
 
 - At most 50 graph nodes are eligible for a manual run; at most 25 nodes can execute in one run.
-- The overall graph budget is eight seconds. Each Gemini request is cancelled after at most six seconds or the remaining graph budget, whichever is shorter. No automatic retries are performed.
-- AI prompt inputs are capped at 16,384 characters, system instructions at 4,096 characters, configured JSON Schema at 8,192 characters, generated output at 2,048 tokens and 65,536 characters of returned text. The Google SDK receives an abort signal; cancellation stops the client operation but may not cancel provider-side work already accepted by Google.
-- Manual input is capped at 16 KiB. Outbound request and response bodies are capped at 32 KiB and 64 KiB respectively. URL length is capped at 2,048 characters.
+- The overall graph budget is eight seconds. Each AI request is cancelled after at most six seconds or the remaining graph budget, whichever is shorter. The OpenAI SDK has automatic retries disabled. Cancellation may not stop provider-side work that has already been accepted.
+- AI prompt inputs are capped at 16,384 characters, system instructions at 4,096 characters, configured JSON Schema at 8,192 characters, generated output at 2,048 tokens, and returned text at 65,536 characters. Manual input is capped at 16 KiB.
+- Outbound request and response bodies are capped at 32 KiB and 64 KiB respectively. URL length is capped at 2,048 characters.
 - Outbound requests must use HTTPS on port 443, without embedded URL credentials. IP literals and every DNS A/AAAA answer must classify as public unicast. The selected public address is pinned to the connection while TLS verification and hostname SNI remain enabled.
-- Redirects are not followed. User-supplied headers and credentials are not supported. Non-2xx responses fail the action.
-- The runner does not make requests during graph save or preview. An outbound call or AI-provider call happens only when the signed-in user explicitly starts a run.
+- Redirects are not followed. User-supplied headers and credentials are not supported for workflow HTTP actions. Non-2xx responses fail the action.
+- The runner does not make requests during graph save or preview. An outbound or AI-provider call happens only when the signed-in user explicitly starts a run.
 
 ## Persistence and privacy
 
-An `executions` record transitions through `pending` → `running` → `completed` or `failed`. An `execution_logs` row records the node UUID, status, timestamp, and limited safe metadata. Trigger data persists only a received flag and field count; node logs do not persist prompts, trigger values, AI completions, raw HTTP bodies, full URLs, provider error bodies, or exception stacks. AI log summaries may include the model identifier, output type and character count, and provider-reported token counts. Fixed safe provider messages can report missing server configuration, timeout, or a generic provider failure.
+An `executions` record transitions through `pending` → `running` → `completed` or `failed`. An `execution_logs` row records the node UUID, status, timestamp, and limited safe metadata. Trigger data persists only a received flag and field count; node logs do not persist prompts, trigger values, AI completions, raw HTTP bodies, full URLs, provider error bodies, or exception stacks. AI log summaries may include the model identifier, output type and character count, and provider-reported token counts. Only fixed, content-free provider errors may be logged.
 
-AI results remain in the in-memory execution context for downstream nodes; the manual execution response returns status and safe logs, not raw AI output. A test-injected provider is used in unit tests; no live Gemini key or paid model request was used during implementation. If `GEMINI_API_KEY` is not configured on the server, an AI node fails safely without exposing credentials or SDK error details.
+BYO keys are encrypted at rest in `credentials.encrypted_payload` with AES-256-GCM. `CREDENTIAL_ENCRYPTION_KEY` must be a stable, server-only Base64 encoding of 32 random bytes. The encrypted envelope is authenticated against the credential ID, owner ID, and provider. List/create APIs return masked metadata only; key bytes are never returned after creation. Losing the master key makes existing stored keys unrecoverable. No plaintext keys, encryption key, prompts, or provider responses are logged.
+
+AI results remain in the in-memory execution context for downstream nodes; the manual execution response returns status and safe logs, not raw AI output. Tests inject fake providers; no live Gemini/OpenAI key or paid model request was used during implementation. If a required provider credential or vault master key is missing, the node fails safely without exposing secrets or SDK error details.
 
 ## Reliability and production boundary
 
-Manual executions are synchronous and bounded rather than queued. Their graph budget leaves time for response/database work within an ordinary serverless invocation; long-running workflows need a durable queue/background design in a later phase. External public-endpoint actions remain a potential abuse surface, and shared built-in model usage can incur provider costs. Rate limits, per-user quotas, abuse monitoring, execution history UI, retry/idempotency support, and deployment-level egress controls are not implemented. Do not enable production execution until the deployment environment, database migrations, AI billing controls, rate limits, and abuse monitoring have been reviewed.
+Manual executions are synchronous and bounded rather than queued. Their graph budget leaves time for response/database work within an ordinary serverless invocation; long-running workflows need a durable queue/background design in a later phase. External public-endpoint actions and user-owned model usage remain potential abuse/cost surfaces. Rate limits, per-user quotas, abuse monitoring, execution history UI, retry/idempotency support, and deployment-level egress controls are not implemented. Arbitrary custom provider URLs remain disabled until credentialed outbound egress receives a dedicated SSRF and credential-exfiltration review. Do not enable production execution until the deployment environment, database migrations, provider billing controls, rate limits, and abuse monitoring have been reviewed.

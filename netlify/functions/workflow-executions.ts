@@ -2,11 +2,13 @@ import type { Config, Context } from '@netlify/functions';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../src/db';
-import { connections, executions, executionLogs, workflowNodes, workflows } from '../../src/db/schema';
+import { connections, credentials, executions, executionLogs, workflowNodes, workflows } from '../../src/db/schema';
 import { getRequestUser } from '../../src/server/auth/request-user';
 import { isSameOriginRequest, jsonResponse, parseJsonBody } from '../../src/server/auth/http';
 import { executeWorkflowGraph } from '../../src/server/execution/engine';
 import { summarizeTriggerInput } from '../../src/server/execution/logging';
+import { isAIProviderId } from '../../src/types/ai';
+import { createOwnerAIProviderResolver } from '../../src/server/ai/provider-resolver';
 import { workflowGraphSchema } from '../../src/server/workflows/graph-validation';
 import { workflowOwnerScope } from '../../src/server/workflows/ownership';
 import { workflowIdSchema } from '../../src/server/workflows/validation';
@@ -94,7 +96,26 @@ export default async function workflowExecutions(request: Request, context: Cont
       .set({ status: 'running', startedAt })
       .where(and(eq(executions.id, created.id), eq(executions.workflowId, workflowId)));
 
-    const result = await executeWorkflowGraph(parsedGraph.data, triggerInput);
+    const resolveAIProvider = createOwnerAIProviderResolver(user.id, async (ownerId, credentialId, provider) => {
+      const [credential] = await db
+        .select({
+          id: credentials.id,
+          ownerId: credentials.ownerId,
+          provider: credentials.provider,
+          encryptedPayload: credentials.encryptedPayload,
+        })
+        .from(credentials)
+        .where(and(
+          eq(credentials.id, credentialId),
+          eq(credentials.ownerId, ownerId),
+          eq(credentials.provider, provider),
+        ))
+        .limit(1);
+      if (!credential || !isAIProviderId(credential.provider)) return null;
+      return { ...credential, provider: credential.provider };
+    });
+
+    const result = await executeWorkflowGraph(parsedGraph.data, triggerInput, { resolveAIProvider });
     if (result.logs.length > 0) {
       await db.insert(executionLogs).values(
         result.logs.map((log) => ({

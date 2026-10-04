@@ -14,8 +14,8 @@ import {
 } from 'drizzle-orm/pg-core';
 
 /**
- * Application schema through Phase 2C; Phase 4 uses the execution tables defined here.
- * Credential encryption and long-running execution infrastructure remain later phases.
+ * Application schema through Phase 2C; Phases 4-6 use the execution and encrypted-credential tables defined here.
+ * Long-running execution infrastructure remains later work.
  */
 
 export const executionStatusEnum = pgEnum('execution_status', [
@@ -205,7 +205,7 @@ export const credentials = pgTable(
     integrationId: uuid('integration_id'),
     provider: varchar('provider', { length: 100 }).notNull(),
     name: varchar('name', { length: 120 }).notNull(),
-    // Opaque ciphertext storage only; encryption/decryption is implemented in a later phase.
+    // AES-256-GCM envelope only; plaintext provider keys never belong in this table.
     encryptedPayload: text('encrypted_payload').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),

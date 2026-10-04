@@ -20,11 +20,13 @@ import { isWorkflowConnectionAllowed } from '@/lib/workflow-graph';
 import { toWorkflowConnection } from './graph-mapping';
 import type { FlowEdge, FlowNode } from './flow-types';
 import { WorkflowNodeCard } from './WorkflowNodeCard';
+import type { AICredentialSummary } from '@/types/ai';
 
 interface WorkflowCanvasProps {
   nodes: FlowNode[];
   edges: FlowEdge[];
   selectedNodeId: string | null;
+  aiCredentials?: AICredentialSummary[];
   readOnly?: boolean;
   onNodesChange: (changes: NodeChange<FlowNode>[]) => void;
   onEdgesChange: (changes: EdgeChange<FlowEdge>[]) => void;
@@ -225,6 +227,7 @@ export function WorkflowCanvas(props: WorkflowCanvasProps) {
             </dl>
             <NodeConfigurationEditor
               node={selectedNode}
+              credentials={props.aiCredentials ?? []}
               onChange={(config) => props.onUpdateNodeConfig(selectedNode.id, config)}
             />
           </div>

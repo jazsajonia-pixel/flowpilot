@@ -46,7 +46,7 @@ export function SettingsPage() {
             <Shield className="h-4 w-4 text-primary" />
             Security & Authentication
           </CardTitle>
-          <CardDescription>Security policies and credential management are being built in later phases</CardDescription>
+          <CardDescription>Provider credentials are managed separately and decrypted only by server functions</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="rounded-lg border border-border bg-muted/30 p-4 text-xs text-muted-foreground space-y-2">
@@ -55,7 +55,7 @@ export function SettingsPage() {
               Encrypted Credential Vault
             </div>
             <p>
-              The encrypted credential vault is planned for Phase 6 and is not implemented yet. Do not store real API keys in this prototype.
+              Gemini and OpenAI keys can be managed from AI Providers. Keys are encrypted before database storage, are never returned after saving, and require the server-only <code>CREDENTIAL_ENCRYPTION_KEY</code> to be configured.
             </p>
           </div>
         </CardContent>

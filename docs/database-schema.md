@@ -23,13 +23,13 @@ All primary keys are PostgreSQL UUIDs. Timestamps use `timestamptz`. JSONB is us
 
 ## Ownership and deletion behavior
 
-`workflows`, `integrations`, and `credentials` have owner foreign keys. These foreign keys establish data relationships only; they do not authorize requests. Server-side identity verification and ownership checks belong to Phases 2C and 2D.
+`workflows`, `integrations`, and `credentials` have owner foreign keys. These foreign keys establish data relationships only; they do not authorize requests. Workflow identity and ownership checks were added in Phases 2C/2D; credential API access is session- and owner-scoped in Phase 6.
 
 Deleting a user cascades to that user's integrations and credentials. Deleting an integration cascades to credentials attached to it. Workflow deletion cascades to its nodes and connections, but executions deliberately use the default restrictive foreign-key behavior: a workflow with execution history cannot be deleted until a later phase defines an explicit retention/deletion policy. Consequently, deleting a user who has workflows with execution history is also blocked. Deleting an execution cascades to its logs.
 
 ## Security boundaries
 
-- `credentials.encrypted_payload` is an opaque storage field. Phase 2B provides no encryption implementation and no code should write plaintext secrets there. Encryption, key management, masking, and access controls must be implemented and reviewed in their designated later phases.
+- `credentials.encrypted_payload` is an opaque storage field. Phase 2B itself provides no encryption implementation; Phase 6 writes only AES-256-GCM ciphertext authenticated against owner ID, credential ID, and provider. The server-only `CREDENTIAL_ENCRYPTION_KEY` must be a stable Base64 encoding of 32 random bytes. Management APIs return masked metadata only; production key backup/rotation and periodic cryptographic review remain operational security responsibilities.
 - `integrations.settings` is for non-secret configuration only.
 - Execution trigger/log JSONB may contain sensitive or personal data. Redaction, retention, and access controls are not implemented by the schema and must be addressed before execution features are enabled.
 - Registration/login normalize email addresses to lowercase before lookup and insert. The database index itself is exact-case; any direct SQL or future non-auth write path must also store canonical lowercase email values.

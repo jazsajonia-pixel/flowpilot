@@ -1,8 +1,9 @@
 import { isDeepStrictEqual } from 'node:util';
-import type { AIOutputFormat, AIProvider, AIProviderResponse } from '../../types/ai';
+import { isAIModelForProvider, isAIProviderId, type AIOutputFormat, type AIProvider, type AIProviderResponse } from '../../types/ai';
 import type { NodeConnection, WorkflowNode } from '../../types/workflow';
 import type { WorkflowGraphInput } from '../workflows/graph-validation';
 import { GeminiAIProvider } from '../ai/gemini-provider';
+import type { AIProviderResolver } from '../ai/provider-resolver';
 import { parseResponseJsonSchema, parseStructuredJsonResponse } from '../ai/json-schema';
 import { safeExecutionError, summarizeNodeInput, summarizeNodeOutput, type SafeExecutionLog } from './logging';
 import { OutboundRequestError, sendPublicHttpsRequest, type OutboundHttpResult } from './outbound-http';
@@ -35,6 +36,7 @@ export interface WorkflowExecutionOptions {
   timeoutMs?: number;
   request?: typeof sendPublicHttpsRequest;
   aiProvider?: AIProvider;
+  resolveAIProvider?: AIProviderResolver;
   now?: () => number;
 }
 
@@ -201,7 +203,7 @@ function numberConfig(config: Record<string, unknown>, key: string): number | un
 async function runAINode(
   node: WorkflowNode,
   context: ExecutionContext,
-  provider: AIProvider,
+  executionOptions: WorkflowExecutionOptions,
   remainingMs: number,
 ): Promise<{ result: unknown; model: string; usage?: AIProviderResponse['usage'] }> {
   const config = node.config;
@@ -263,12 +265,39 @@ async function runAINode(
   }
 
   if (prompt.length > MAX_AI_INPUT_CHARACTERS) throw new WorkflowNodeError('AI input is missing or too long.');
+  const providerId = config.provider === undefined
+    ? 'gemini'
+    : isAIProviderId(config.provider) ? config.provider : undefined;
+  if (!providerId) throw new WorkflowNodeError('AI provider or model selection is invalid.');
+  const credentialId = optionalString(config, 'credentialId');
+  const model = optionalString(config, 'model');
+  if (model !== undefined && !isAIModelForProvider(providerId, model)) {
+    throw new WorkflowNodeError('AI provider or model selection is invalid.');
+  }
+  if (providerId === 'openai' && !credentialId) {
+    throw new WorkflowNodeError('Select an OpenAI credential before running this node.');
+  }
+  let activeProvider: AIProvider;
+  if (executionOptions.resolveAIProvider) {
+    activeProvider = await executionOptions.resolveAIProvider({
+      provider: providerId,
+      ...(credentialId ? { credentialId } : {}),
+      ...(model ? { model } : {}),
+    });
+  } else if (executionOptions.aiProvider && providerId === 'gemini' && !credentialId) {
+    activeProvider = executionOptions.aiProvider;
+  } else if (providerId === 'gemini' && !credentialId) {
+    activeProvider = new GeminiAIProvider({ ...(model ? { model } : {}) });
+  } else {
+    throw new WorkflowNodeError('The selected AI provider credential is unavailable.');
+  }
   const abortSignal = AbortSignal.timeout(Math.max(1, Math.min(MAX_AI_REQUEST_MS, remainingMs)));
-  const response = await provider.generateCompletion({
+  const response = await activeProvider.generateCompletion({
     prompt,
     ...(systemInstruction ? { systemInstruction } : {}),
     ...(temperature === undefined ? {} : { temperature }),
     ...(maxTokens === undefined ? {} : { maxTokens }),
+    ...(model ? { model } : {}),
     outputFormat,
     ...(responseJsonSchema ? { responseJsonSchema } : {}),
     abortSignal,
@@ -287,14 +316,14 @@ async function runNode(
   node: WorkflowNode,
   context: ExecutionContext,
   request: typeof sendPublicHttpsRequest,
-  aiProvider: AIProvider | undefined,
+  executionOptions: WorkflowExecutionOptions,
   remainingMs: number,
 ): Promise<unknown> {
   if (node.category === 'manual_trigger') return { received: true };
   if (node.category === 'condition') return applyCondition(node, context);
   if (node.category === 'filter') return applyFilter(node, context);
   if (node.category === 'gemini_ai' || node.category.startsWith('ai_')) {
-    return runAINode(node, context, aiProvider ?? new GeminiAIProvider(), remainingMs);
+    return runAINode(node, context, executionOptions, remainingMs);
   }
 
   if (node.category === 'http_request' || node.category === 'webhook_action') {
@@ -313,7 +342,7 @@ async function runNode(
     return { status: response.status, ok: true, body: response.body, responseBytes: response.responseBytes };
   }
 
-  throw new WorkflowNodeError('This node is not executable in Phase 4.');
+  throw new WorkflowNodeError('This node is not supported by the current execution engine.');
 }
 
 export async function executeWorkflowGraph(
@@ -323,7 +352,6 @@ export async function executeWorkflowGraph(
 ): Promise<WorkflowExecutionResult> {
   const now = options.now ?? Date.now;
   const request = options.request ?? sendPublicHttpsRequest;
-  const aiProvider = options.aiProvider;
   const startTime = now();
   const deadline = startTime + Math.min(options.timeoutMs ?? DEFAULT_EXECUTION_BUDGET_MS, DEFAULT_EXECUTION_BUDGET_MS);
   const logs: SafeExecutionLog[] = [];
@@ -372,7 +400,7 @@ export async function executeWorkflowGraph(
     executedCount += 1;
     try {
       const remainingMs = deadline - now();
-      const output = await runNode(node, context, request, aiProvider, remainingMs);
+      const output = await runNode(node, context, request, options, remainingMs);
       context.steps[node.id] = output;
       logs.push({
         nodeId: node.id,

@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { validateWorkflowConnections } from '../../lib/workflow-graph';
 import { NODE_CATALOG, NODE_TYPE_BY_CATEGORY, type NodeCategory } from '../../types/workflow';
-import { parseResponseJsonSchema } from '../ai/json-schema';
+import { isAIModelForProvider } from '../../types/ai';
+import { isOpenAIStrictJsonSchema, parseResponseJsonSchema } from '../ai/json-schema';
 import { workflowIdSchema } from './validation';
 
 const nodeTypes = ['trigger', 'ai', 'logic', 'action'] as const;
@@ -67,16 +68,34 @@ const aiCommonConfigSchema = z.object({
   maxTokens: z.number().int().min(1).max(2_048).optional(),
 });
 
+const aiProviderConfigFields = {
+  provider: z.enum(['gemini', 'openai']).optional(),
+  credentialId: workflowIdSchema.optional(),
+  model: z.string().max(80).optional(),
+};
+
+function validateAIProviderSelection(config: { provider?: 'gemini' | 'openai'; model?: string }, context: z.RefinementCtx): void {
+  const provider = config.provider ?? 'gemini';
+  if (config.model !== undefined && !isAIModelForProvider(provider, config.model)) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: 'Choose a supported model for the selected AI provider.', path: ['model'] });
+  }
+}
+
 const geminiAIConfigSchema = aiCommonConfigSchema.extend({
+  ...aiProviderConfigFields,
   outputFormat: z.enum(['text', 'json']).optional(),
   responseSchema: z.string().max(8_192).optional(),
 }).strict().superRefine((config, context) => {
+  validateAIProviderSelection(config, context);
   if (config.responseSchema?.trim() && config.outputFormat !== 'json') {
     context.addIssue({ code: z.ZodIssueCode.custom, message: 'A response schema requires JSON output.', path: ['outputFormat'] });
   }
   if (config.responseSchema?.trim()) {
     try {
-      parseResponseJsonSchema(config.responseSchema);
+      const schema = parseResponseJsonSchema(config.responseSchema);
+      if ((config.provider ?? 'gemini') === 'openai' && !isOpenAIStrictJsonSchema(schema)) {
+        context.addIssue({ code: z.ZodIssueCode.custom, message: 'OpenAI JSON Schema output requires a closed object with every property required.', path: ['responseSchema'] });
+      }
     } catch {
       context.addIssue({ code: z.ZodIssueCode.custom, message: 'The response schema must be supported JSON Schema.', path: ['responseSchema'] });
     }
@@ -84,18 +103,24 @@ const geminiAIConfigSchema = aiCommonConfigSchema.extend({
 });
 
 const aiClassificationConfigSchema = z.object({
+  ...aiProviderConfigFields,
   input: z.string().max(16_384).optional(),
   labels: z.array(z.string().trim().min(1).max(80)).max(40).optional(),
-}).strict();
+}).strict().superRefine(validateAIProviderSelection);
 
 const aiExtractionConfigSchema = z.object({
+  ...aiProviderConfigFields,
   input: z.string().max(16_384).optional(),
   instruction: z.string().max(4_096).optional(),
   responseSchema: z.string().max(8_192).optional(),
 }).strict().superRefine((config, context) => {
+  validateAIProviderSelection(config, context);
   if (config.responseSchema?.trim()) {
     try {
-      parseResponseJsonSchema(config.responseSchema);
+      const schema = parseResponseJsonSchema(config.responseSchema);
+      if ((config.provider ?? 'gemini') === 'openai' && !isOpenAIStrictJsonSchema(schema)) {
+        context.addIssue({ code: z.ZodIssueCode.custom, message: 'OpenAI JSON Schema output requires a closed object with every property required.', path: ['responseSchema'] });
+      }
     } catch {
       context.addIssue({ code: z.ZodIssueCode.custom, message: 'The response schema must be supported JSON Schema.', path: ['responseSchema'] });
     }
@@ -103,11 +128,12 @@ const aiExtractionConfigSchema = z.object({
 });
 
 const aiSummarizationConfigSchema = z.object({
+  ...aiProviderConfigFields,
   input: z.string().max(16_384).optional(),
   style: z.enum(['brief', 'detailed', 'bullets']).optional(),
-}).strict();
+}).strict().superRefine(validateAIProviderSelection);
 
-const aiGenerationConfigSchema = aiCommonConfigSchema.strict();
+const aiGenerationConfigSchema = aiCommonConfigSchema.extend(aiProviderConfigFields).strict().superRefine(validateAIProviderSelection);
 
 const configSchemaByCategory: Record<NodeCategory, z.ZodTypeAny> = {
   manual_trigger: emptyConfigSchema,
