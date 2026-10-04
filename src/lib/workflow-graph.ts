@@ -48,12 +48,19 @@ function connectionProblem(
   targetNodeId: string,
   nodesById: ReadonlyMap<string, GraphNodeRef>,
   existing: readonly GraphConnectionRef[],
+  sourceHandle?: string | null,
+  targetHandle?: string | null,
 ): string | null {
   const source = nodesById.get(sourceNodeId);
   const target = nodesById.get(targetNodeId);
   if (!source || !target) return 'Both connected nodes must exist in this workflow.';
   if (sourceNodeId === targetNodeId) return 'A node cannot connect to itself.';
   if (target.type === 'trigger') return 'Trigger nodes cannot receive connections.';
+  if (sourceHandle != null) {
+    const allowedSourceHandles = source.category === 'condition' ? ['true', 'false', 'out'] : ['out'];
+    if (!allowedSourceHandles.includes(sourceHandle)) return 'The source handle is not valid for this node.';
+  }
+  if (targetHandle != null && targetHandle !== 'in') return 'The target handle is not valid for this node.';
   if (existing.some((edge) => edge.sourceNodeId === sourceNodeId && edge.targetNodeId === targetNodeId)) {
     return 'This connection already exists.';
   }
@@ -66,9 +73,11 @@ export function isWorkflowConnectionAllowed(
   targetNodeId: string | null | undefined,
   nodes: readonly GraphNodeRef[],
   existing: readonly GraphConnectionRef[],
+  sourceHandle?: string | null,
+  targetHandle?: string | null,
 ): boolean {
   if (!sourceNodeId || !targetNodeId) return false;
-  return connectionProblem(sourceNodeId, targetNodeId, new Map(nodes.map((node) => [node.id, node])), existing) === null;
+  return connectionProblem(sourceNodeId, targetNodeId, new Map(nodes.map((node) => [node.id, node])), existing, sourceHandle, targetHandle) === null;
 }
 
 export function validateWorkflowConnections(
@@ -86,7 +95,7 @@ export function validateWorkflowConnections(
       return;
     }
     ids.add(connection.id);
-    const problem = connectionProblem(connection.sourceNodeId, connection.targetNodeId, nodesById, accepted);
+    const problem = connectionProblem(connection.sourceNodeId, connection.targetNodeId, nodesById, accepted, connection.sourceHandle, connection.targetHandle);
     if (problem) {
       issues.push({ index, message: problem });
       return;

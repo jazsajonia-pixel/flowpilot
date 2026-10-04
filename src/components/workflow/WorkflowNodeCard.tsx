@@ -36,13 +36,21 @@ export function WorkflowNodeCard({ data, selected, isConnectable }: NodeProps<Fl
         </span>
       </div>
       <div className={`h-1 w-full rounded-b-xl ${style.accent}`} />
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="out"
-        isConnectable={isConnectable}
-        className="!h-3 !w-3 !border-2 !border-white !bg-primary"
-      />
+      {data.category === 'condition' ? (
+        <>
+          <Handle type="source" position={Position.Right} id="true" isConnectable={isConnectable} style={{ top: '25%' }} title="True" className="!h-3 !w-3 !border-2 !border-white !bg-emerald-500" />
+          <Handle type="source" position={Position.Right} id="out" isConnectable={isConnectable} style={{ top: '50%' }} title="Unconditional (legacy)" className="!h-3 !w-3 !border-2 !border-white !bg-primary" />
+          <Handle type="source" position={Position.Right} id="false" isConnectable={isConnectable} style={{ top: '75%' }} title="False" className="!h-3 !w-3 !border-2 !border-white !bg-rose-500" />
+        </>
+      ) : (
+        <Handle
+          type="source"
+          position={Position.Right}
+          id="out"
+          isConnectable={isConnectable}
+          className="!h-3 !w-3 !border-2 !border-white !bg-primary"
+        />
+      )}
     </div>
   );
 }

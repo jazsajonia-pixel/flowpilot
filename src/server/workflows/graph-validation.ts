@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { validateWorkflowConnections } from '../../lib/workflow-graph';
-import { NODE_CATALOG, NODE_TYPE_BY_CATEGORY } from '../../types/workflow';
+import { NODE_CATALOG, NODE_TYPE_BY_CATEGORY, type NodeCategory } from '../../types/workflow';
 import { workflowIdSchema } from './validation';
 
 const nodeTypes = ['trigger', 'ai', 'logic', 'action'] as const;
@@ -8,6 +8,7 @@ const nodeCategories = NODE_CATALOG.map((definition) => definition.category) as 
   (typeof NODE_CATALOG)[number]['category'],
   ...(typeof NODE_CATALOG)[number]['category'][],
 ];
+const operators = ['equals', 'not_equals', 'contains', 'not_contains', 'greater_than', 'less_than', 'is_empty', 'is_not_empty'] as const;
 
 const positionSchema = z
   .object({
@@ -18,7 +19,65 @@ const positionSchema = z
 
 const emptyConfigSchema = z
   .record(z.unknown())
-  .refine((value) => Object.keys(value).length === 0, 'Node configuration is not editable in this phase.');
+  .refine((value) => Object.keys(value).length === 0, 'This node has no editable configuration in this phase.');
+
+const conditionConfigSchema = z
+  .object({
+    left: z.string().max(512).optional(),
+    operator: z.enum(operators).optional(),
+    right: z.string().max(512).optional(),
+  })
+  .strict();
+
+const filterConfigSchema = z
+  .object({
+    arrayPath: z.string().max(512).optional(),
+    fieldPath: z.string().max(512).optional(),
+    operator: z.enum(operators).optional(),
+    value: z.string().max(512).optional(),
+  })
+  .strict();
+
+const httpRequestConfigSchema = z
+  .object({
+    url: z.string().max(2_048).optional(),
+    method: z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']).optional(),
+    body: z.string().max(32_768).optional(),
+  })
+  .strict()
+  .superRefine((config, context) => {
+    const method = config.method ?? 'GET';
+    if ((method === 'GET' || method === 'DELETE') && config.body?.trim()) {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: 'GET and DELETE requests cannot include a body.', path: ['body'] });
+    }
+  });
+
+const webhookActionConfigSchema = z
+  .object({
+    url: z.string().max(2_048).optional(),
+    body: z.string().max(32_768).optional(),
+  })
+  .strict();
+
+const configSchemaByCategory: Record<NodeCategory, z.ZodTypeAny> = {
+  manual_trigger: emptyConfigSchema,
+  webhook_trigger: emptyConfigSchema,
+  schedule_trigger: emptyConfigSchema,
+  gemini_ai: emptyConfigSchema,
+  ai_classification: emptyConfigSchema,
+  ai_extraction: emptyConfigSchema,
+  ai_summarization: emptyConfigSchema,
+  ai_generation: emptyConfigSchema,
+  condition: conditionConfigSchema,
+  switch: emptyConfigSchema,
+  filter: filterConfigSchema,
+  delay: emptyConfigSchema,
+  send_email: emptyConfigSchema,
+  http_request: httpRequestConfigSchema,
+  create_db_record: emptyConfigSchema,
+  update_db_record: emptyConfigSchema,
+  webhook_action: webhookActionConfigSchema,
+};
 
 const workflowNodeSchema = z
   .object({
@@ -27,12 +86,20 @@ const workflowNodeSchema = z
     category: z.enum(nodeCategories),
     label: z.string().trim().min(1).max(200),
     position: positionSchema,
-    config: emptyConfigSchema,
+    config: z.record(z.unknown()),
   })
   .strict()
   .superRefine((node, context) => {
     if (NODE_TYPE_BY_CATEGORY[node.category] !== node.type) {
       context.addIssue({ code: z.ZodIssueCode.custom, message: 'Node type does not match its category.', path: ['type'] });
+    }
+    const configResult = configSchemaByCategory[node.category].safeParse(node.config);
+    if (!configResult.success) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Node configuration is invalid or contains unsupported fields.',
+        path: ['config'],
+      });
     }
   });
 

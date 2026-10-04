@@ -14,6 +14,25 @@ export interface WorkflowGraph {
   connections: NodeConnection[];
 }
 
+export interface WorkflowExecutionLogSummary {
+  nodeId: string;
+  status: 'success' | 'error' | 'skipped';
+  timestamp: string;
+  inputData?: unknown;
+  outputData?: unknown;
+  error?: string;
+}
+
+export interface WorkflowExecutionSummary {
+  id: string;
+  workflowId: string;
+  status: 'completed' | 'failed';
+  startedAt: string;
+  completedAt: string;
+  error: string | null;
+  logs: WorkflowExecutionLogSummary[];
+}
+
 export class WorkflowApiError extends Error {
   constructor(message: string, readonly status?: number) {
     super(message);
@@ -88,4 +107,12 @@ export async function saveWorkflowGraph(workflowId: string, graph: WorkflowGraph
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(graph),
   });
+}
+
+export async function runWorkflow(workflowId: string, input: Record<string, unknown>): Promise<WorkflowExecutionSummary> {
+  const result = await request<{ execution: WorkflowExecutionSummary }>(
+    `/api/workflows/${encodeURIComponent(workflowId)}/executions`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ input }) },
+  );
+  return result.execution;
 }
