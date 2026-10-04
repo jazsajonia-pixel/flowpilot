@@ -1,4 +1,4 @@
-const MAX_AUTH_BODY_BYTES = 8 * 1024;
+const DEFAULT_MAX_BODY_BYTES = 8 * 1024;
 
 export type ParsedJsonBody =
   | { ok: true; value: unknown }
@@ -15,14 +15,17 @@ export function isSameOriginRequest(request: Request): boolean {
   }
 }
 
-export async function parseJsonBody(request: Request): Promise<ParsedJsonBody> {
+export async function parseJsonBody(
+  request: Request,
+  maxBytes = DEFAULT_MAX_BODY_BYTES,
+): Promise<ParsedJsonBody> {
   const contentType = request.headers.get('content-type')?.split(';', 1)[0].trim().toLowerCase();
   if (contentType !== 'application/json') {
     return { ok: false, status: 415, message: 'Expected a JSON request body.' };
   }
 
   const contentLength = request.headers.get('content-length');
-  if (contentLength && Number(contentLength) > MAX_AUTH_BODY_BYTES) {
+  if (contentLength && Number(contentLength) > maxBytes) {
     return { ok: false, status: 413, message: 'Request body is too large.' };
   }
 
@@ -36,7 +39,7 @@ export async function parseJsonBody(request: Request): Promise<ParsedJsonBody> {
       const { done, value } = await reader.read();
       if (done) break;
       totalBytes += value.byteLength;
-      if (totalBytes > MAX_AUTH_BODY_BYTES) {
+      if (totalBytes > maxBytes) {
         await reader.cancel().catch(() => undefined);
         return { ok: false, status: 413, message: 'Request body is too large.' };
       }

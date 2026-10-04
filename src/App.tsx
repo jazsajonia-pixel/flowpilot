@@ -11,6 +11,7 @@ import {
   AIProvidersPage,
   IntegrationsPage,
   SettingsPage,
+  WorkflowEditorPage,
 } from "@/pages";
 
 export default function App() {
@@ -20,6 +21,8 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<AuthPage />} />
           <Route path="/register" element={<AuthPage />} />
+          <Route path="/workflow-preview" element={<WorkflowEditorPage demo />} />
+          <Route path="/workflows/:workflowId/edit" element={<WorkflowEditorPage />} />
           <Route path="/" element={<AppShell />}>
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<DashboardPage />} />
