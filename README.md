@@ -11,7 +11,8 @@ FlowPilot AI is a modern, web-based visual automation platform that enables user
 - **Phase 0 — Project Constitution & Architecture:** COMPLETE
 - **Phase 1 — Application Foundation:** COMPLETE
 - **Phase 2A — Database Infrastructure + Drizzle + Netlify Database:** COMPLETE
-- **Phase 2B — Application Database Schema:** NEXT
+- **Phase 2B — Application Database Schema:** IN REVIEW
+- **Phase 2C — Authentication & Sessions:** NEXT AFTER PHASE 2B
 
 ---
 
@@ -122,8 +123,8 @@ FlowPilot AI
 1. **Phase 0:** Project Constitution & Architecture *(Completed)*
 2. **Phase 1:** Application Foundation *(Completed)*
 3. **Phase 2A:** Database Infrastructure + Drizzle + Netlify Database *(Completed)*
-4. **Phase 2B:** Application Database Schema *(Next)*
-5. **Phase 2C:** Authentication & Sessions
+4. **Phase 2B:** Application Database Schema *(In review)*
+5. **Phase 2C:** Authentication & Sessions *(Next after Phase 2B)*
 6. **Phase 2D:** Protected API & Ownership Verification
 7. **Phase 3:** Visual Workflow Builder (React Flow)
 8. **Phase 4:** Workflow Execution Engine
@@ -142,6 +143,7 @@ See [`docs/roadmap.md`](docs/roadmap.md) for full details.
 
 - [`AGENTS.md`](AGENTS.md) — AI Coding Rules, Development Principles, and Security Mandates.
 - [`docs/architecture.md`](docs/architecture.md) — Detailed Architecture and Data Flow Specs.
+- [`docs/database-schema.md`](docs/database-schema.md) — Phase 2B database tables, relationships, and security boundaries.
 - [`docs/workflow-engine.md`](docs/workflow-engine.md) — Node Types, Graph Execution, and Logging Specs.
 - [`docs/roadmap.md`](docs/roadmap.md) — Multi-Phase Development Roadmap.
 
