@@ -82,7 +82,7 @@ FlowPilot AI
 │   ├── Executions API
 │   ├── AI Router
 │   ├── Credentials Vault
-│   └── Database Health Check (/api/db-health)
+│   └── Database Health Check (/.netlify/functions/db-health)
 │
 ├── Workflow Engine
 │   ├── Trigger System (Manual, Webhook, Schedule)
