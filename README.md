@@ -115,11 +115,11 @@ FlowPilot AI
 
 - **Zero Secrets in Client:** API keys and database credentials are never exposed to frontend code or client bundles.
 - **Git Hygiene:** Secrets and `.env` files are strictly excluded from source control. Template configuration is provided in `.env.example`.
-- **Server-Side Credential & Database Handling:** Database queries run in Netlify Functions. Credential encryption and secret-management endpoints are planned for Phase 6 and are not yet implemented.
+- **Server-Side Credential & Database Handling:** Database queries and the built-in Gemini provider run in server code. `GEMINI_API_KEY` is read only from the server environment; encrypted user-specific credentials and secret-management endpoints are planned for Phase 6.
 - **Strict Payload Validation:** All API requests are validated with **Zod** schemas.
 - **Server-Side Authentication & Authorization:** Workflow metadata and graph endpoints require server-verified sessions and owner-scoped queries. Other placeholder frontend pages are not protected, and client-side session display is not access control.
 - **Execution Safety:** Manual execution rechecks workflow ownership, validates graph settings, limits runtime/steps/request sizes, and blocks non-public outbound destinations. Logs omit submitted values and HTTP bodies. Rate limiting, abuse monitoring, and deployment egress controls are still required before production execution.
-- **Credential Masking:** Sensitive tokens are masked in UI and logs (`sk-••••••••1234`).
+- **AI Log Privacy:** Workflow logs omit AI prompts, completions, and provider error bodies; only safe model/usage/output-size metadata is retained.
 
 ---
 

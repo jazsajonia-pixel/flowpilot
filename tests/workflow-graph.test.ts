@@ -142,3 +142,55 @@ test('server graph schema rejects cross-workflow and duplicate connections', () 
   assert.equal(duplicate.success, false);
   assert.equal(missingNode.success, false);
 });
+
+test('server graph schema accepts bounded Phase 5 AI configuration and rejects credentials or invalid schemas', () => {
+  const responseSchema = JSON.stringify({
+    type: 'object',
+    properties: { name: { type: 'string' } },
+    required: ['name'],
+    additionalProperties: false,
+  });
+  const configurations = [
+    { category: 'gemini_ai', config: { prompt: 'Say hello', outputFormat: 'json', responseSchema } },
+    { category: 'ai_classification', config: { input: '{{trigger.body.text}}', labels: ['support', 'billing'] } },
+    { category: 'ai_extraction', config: { input: '{{trigger.body.text}}', responseSchema } },
+    { category: 'ai_summarization', config: { input: '{{trigger.body.text}}', style: 'bullets' } },
+    { category: 'ai_generation', config: { prompt: 'Draft a reply', temperature: 0.4, maxTokens: 256 } },
+  ];
+  for (const [index, item] of configurations.entries()) {
+    const result = workflowGraphSchema.safeParse({
+      nodes: [{
+        id: `9d4a9c3d-3e7e-4a2b-8f2a-6c68edb55c${String(70 + index).padStart(2, '0')}`,
+        type: 'ai',
+        category: item.category,
+        label: 'AI node',
+        position: { x: 0, y: 0 },
+        config: item.config,
+      }],
+      connections: [],
+    });
+    assert.equal(result.success, true, item.category);
+  }
+
+  const credentialField = workflowGraphSchema.safeParse({
+    nodes: [{ ...nodes[1], config: { prompt: 'Hi', apiKey: 'never-store-here' } }],
+    connections: [],
+  });
+  const modelOverride = workflowGraphSchema.safeParse({
+    nodes: [{ ...nodes[1], config: { prompt: 'Hi', model: 'arbitrary-model' } }],
+    connections: [],
+  });
+  const invalidSchema = workflowGraphSchema.safeParse({
+    nodes: [{ ...nodes[1], config: { prompt: 'Hi', outputFormat: 'json', responseSchema: '{not json' } }],
+    connections: [],
+  });
+  const schemaWithoutJsonFormat = workflowGraphSchema.safeParse({
+    nodes: [{ ...nodes[1], config: { prompt: 'Hi', outputFormat: 'text', responseSchema } }],
+    connections: [],
+  });
+
+  assert.equal(credentialField.success, false);
+  assert.equal(modelOverride.success, false);
+  assert.equal(invalidSchema.success, false);
+  assert.equal(schemaWithoutJsonFormat.success, false);
+});

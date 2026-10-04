@@ -46,17 +46,19 @@ This document outlines the sequential phases for building FlowPilot AI.
 
 ### Phase 4: Workflow Execution Engine (COMPLETE)
 - Implement bounded topological graph execution for owned workflows in Netlify Functions; manual runs require one Manual Trigger.
-- Support Condition true/false branches, Filter, HTTPS HTTP Request, and HTTPS Webhook Action nodes. Webhook/schedule triggers and AI nodes remain later phases.
+- Support Condition true/false branches, Filter, HTTPS HTTP Request, and HTTPS Webhook Action nodes.
 - Add prototype-safe variable interpolation from trigger input and prior step results.
 - Persist execution status and privacy-minimized per-node logs; expose a manual Run dialog and status summary in the editor.
 - Restrict outbound requests to public HTTPS on port 443 with all-address DNS checks, pinned address, no redirects, and request/response/time limits.
 - Add unit tests for execution branches, filters, interpolation, unsupported nodes, and outbound destination validation.
 - Keep runs synchronous and capped (50 graph nodes, 25 executed steps, five-second graph budget). No live database integration or production deployment was performed.
 
-### Phase 5: Gemini AI Integration (IN PROGRESS)
-- Implement default built-in Gemini AI Provider using `@google/genai` / REST API.
-- Build AI Workflow Nodes (Gemini AI, Classification, Extraction, Summarization, Generation).
-- Enable structured prompt processing and output parsing in execution engine.
+### Phase 5: Gemini AI Integration (IN PROGRESS — IMPLEMENTED, VALIDATION/REVIEW PENDING)
+- Implement the default server-side Gemini provider with the official `@google/genai` SDK, `GEMINI_API_KEY`, and the stable `gemini-3.8-flash` default.
+- Execute Gemini AI, Classification, Extraction, Summarization, and Generation nodes through the shared AI provider interface.
+- Support bounded prompts, provider cancellation, JSON mode/JSON Schema, local structured-output validation, and privacy-minimized execution summaries.
+- Provide node-specific configuration editors without exposing provider keys or arbitrary model selection in workflow data.
+- Validate with deterministic fake-provider unit tests; no live API key, paid model request, database integration, or deployment is used.
 
 ### Phase 6: Bring Your Own AI (BYO AI)
 - Build encrypted Credential Vault in Netlify Database for user API keys.

@@ -24,9 +24,9 @@ FlowPilot AI
 │   ├── Authentication & Authorization
 │   ├── Workflows Management API
 │   ├── Execution Logs API
-│   ├── AI Router & Provider API
+│   ├── Internal AI Provider Interface (server-side)
 │   ├── Integrations Gateway
-│   └── Credentials Vault API
+│   └── Credentials Vault API (planned Phase 6)
 │
 ├── Workflow Execution Engine
 │   ├── Trigger System (Manual, Webhook, Schedule)
@@ -38,9 +38,8 @@ FlowPilot AI
 │
 ├── AI Provider Layer (Abstraction)
 │   ├── Built-in FlowPilot Gemini Provider
-│   ├── User Bring-Your-Own Gemini Provider
-│   ├── User Bring-Your-Own OpenAI Provider
-│   └── Custom Compatible AI Provider Adapters
+│   ├── BYO Gemini/OpenAI providers (planned Phase 6)
+│   └── Custom compatible providers (future)
 │
 └── Database Layer (Netlify Database / PostgreSQL / Drizzle ORM)
     ├── Users & Auth
@@ -66,7 +65,7 @@ FlowPilot AI
 ### 2.2 API & Serverless Backend
 - **Platform:** Netlify Functions (Node.js REST API serverless endpoints).
 - **Validation:** Server-side request parsing and validation using Zod.
-- **Security:** Phase 2C establishes server-side email/password authentication and revocable cookie sessions. Phases 2D and 3 protect workflow metadata and graph endpoints with owner-scoped queries. Phase 4 requires the same owner check to create executions and limits outbound requests to public HTTPS; public endpoint abuse controls, broader integrations, and credential encryption remain future work.
+- **Security:** Phase 2C establishes server-side email/password authentication and revocable cookie sessions. Phases 2D and 3 protect workflow metadata and graph endpoints with owner-scoped queries. Phase 4 requires the same owner check to create executions and limits outbound requests to public HTTPS. Phase 5 uses a server-only Gemini provider with an environment-managed key; public endpoint abuse controls, per-user credentials, and credential encryption remain future work. Node 22 is pinned through `.nvmrc`.
 
 ### 2.3 Database Layer (Server-Side Serverless Access)
 ```
@@ -84,35 +83,13 @@ Netlify Database (PostgreSQL)
 - **Native Adapter:** Server-side database operations use Netlify's native Drizzle adapter (`drizzle-orm/netlify-db` via `@netlify/db`).
 - **Strict Boundary:** Database access logic (`src/db/`) is restricted exclusively to server-side Netlify Functions.
 - **Zero Client Exposure:** Database credentials and connection strings are never exposed to Vite client bundles or React UI code.
+- **Provider Secret Boundary:** `GEMINI_API_KEY` is read only by server-side AI provider code and is not accepted in graph configuration or exposed to the Vite client. BYO keys and encrypted credential storage are not implemented.
 - **Schema & Migrations:** Managed with Drizzle ORM and `drizzle-kit`, configured with migration outputs under `netlify/database/migrations/`. Phase 2B defines core entities; Phase 2C adds password-hash/session storage; Phases 2D and 3 provide owner-scoped metadata/graph access; Phase 4 uses the existing execution and execution-log tables. See [`database-schema.md`](database-schema.md), [`authentication.md`](authentication.md), [`workflow-api.md`](workflow-api.md), [`workflow-builder.md`](workflow-builder.md), and [`workflow-engine.md`](workflow-engine.md) for data and security boundaries.
 - **Production Verification:** Remote production database query execution requires an active linked Netlify Database environment.
 
 ### 2.4 AI Provider Layer
-The AI subsystem uses a provider abstraction layer to decoupling engine execution from specific AI vendors:
+The Phase 5 workflow runner depends on the shared `AIProvider` interface rather than calling Google from the editor. The built-in `GeminiAIProvider` uses Google's `@google/genai` SDK from `src/server/ai/`, with `GEMINI_API_KEY` read only in the Netlify Function runtime and `GEMINI_MODEL_ID` as an optional server-side override. The stable default is `gemini-3.8-flash`.
 
-```
-                  ┌──────────────────────┐
-                  │    Workflow Node     │
-                  └──────────┬───────────┘
-                             │
-                             ▼
-                  ┌──────────────────────┐
-                  │ AI Provider Interface│
-                  └──────────┬───────────┘
-                             │
-       ┌─────────────────────┼─────────────────────┐
-       ▼                     ▼                     ▼
-┌──────────────┐      ┌──────────────┐      ┌──────────────┐
-│  FlowPilot   │      │ User Gemini  │      │ User OpenAI  │
-│ Gemini (Default)    │  Credential  │      │  Credential  │
-└──────┬───────┘      └──────┬───────┘      └──────┬───────┘
-       │                     │                     │
-       ▼                     ▼                     ▼
-┌──────────────┐      ┌──────────────┐      ┌──────────────┐
-│ Gemini API   │      │ Gemini API   │      │ OpenAI API   │
-└──────────────┘      └──────────────┘      └──────────────┘
-```
+Gemini AI, Classification, Extraction, Summarization, and Generation nodes pass bounded prompts to that provider. Structured results use JSON mode and a bounded JSON Schema, then are parsed and validated locally before being made available to downstream nodes. Execution logs contain only model, usage, output-type, and output-size metadata; prompts, completions, provider error bodies, and keys are not logged or returned.
 
-- **FlowPilot Gemini:** Built-in default AI engine using platform API keys.
-- **BYO Providers:** User-provided API-key registration is planned for Phase 6, together with the encrypted credential vault.
-- **Security:** Credential encryption, key management, and server-only key use are planned for Phase 6 and are not implemented yet; do not store real third-party API keys in the current prototype.
+BYO Gemini/OpenAI credentials, encrypted credential storage, per-user model selection, quotas, and production abuse controls remain Phase 6/9 work. Do not store provider keys in workflow configuration or expose them to client code. See [`phase-5-references.md`](phase-5-references.md) for current vendor/runtime references and [`workflow-engine.md`](workflow-engine.md) for execution limits.
