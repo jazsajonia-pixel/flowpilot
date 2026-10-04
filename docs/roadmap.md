@@ -22,11 +22,11 @@ This document outlines the sequential phases for building FlowPilot AI.
 - Establish `src/db/index.ts`, `src/db/schema.ts`, `drizzle.config.ts`, and `netlify/database/migrations/`.
 - Implement `netlify/functions/db-health.ts` server-side database connectivity health check.
 
-### Phase 2B: Application Database Schema (NEXT)
+### Phase 2B: Application Database Schema (IN REVIEW)
 - Define Drizzle schema for `users`, `workflows`, `nodes`, `connections`, `executions`, `execution_logs`, `credentials`, and `integrations`.
 - Generate and verify initial Drizzle migrations under `netlify/database/migrations/`.
 
-### Phase 2C: Authentication & Sessions
+### Phase 2C: Authentication & Sessions (NEXT AFTER PHASE 2B)
 - Implement user authentication & session management (JWT / Netlify Functions).
 - Build security middleware for server-side token validation and ownership checking.
 
