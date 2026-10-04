@@ -25,7 +25,7 @@ Auth mutation endpoints accept same-origin JSON only. They validate the `Origin`
 
 ## Deliberate boundaries and launch note
 
-This phase establishes identity and session lifecycle only. It does **not** protect dashboard/API resources or validate workflow ownership; that is Phase 2D. Password reset, email verification, MFA, breached-password screening, rate limiting, and production security hardening are also not included. Registration/login are public endpoints, so add and verify abuse/rate controls before exposing public production signups; Phase 9 tracks broader rate limiting and hardening. Do not treat the current UI session indicator as an access-control boundary.
+Phase 2C established identity and session lifecycle. Phase 2D now protects the workflow-metadata API and enforces workflow ownership; it does not yet guard placeholder dashboard pages or expose graph, execution, integration, or credential APIs. Password reset, email verification, MFA, breached-password screening, rate limiting, and production security hardening are not included. Registration/login are public endpoints, so add and verify abuse/rate controls before exposing public production signups; Phase 9 tracks broader rate limiting and hardening. Do not treat the current UI session indicator as an access-control boundary.
 
 The migration is generated and checked locally, but has not been applied to a live Netlify Database in this environment.
 
