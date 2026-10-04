@@ -6,19 +6,19 @@ This document outlines the sequential phases for building FlowPilot AI.
 
 ## Roadmap Phases
 
-### Phase 0: Project Constitution & Architecture (CURRENT PHASE)
+### Phase 0: Project Constitution & Architecture (COMPLETE)
 - Establish project rules, `AGENTS.md`, and core repository documentation.
 - Setup base Vite/React/TypeScript scaffolding, `.gitignore`, and `.env.example`.
 - Define type abstractions for AI providers and visual workflow nodes.
 - Define architecture for frontend, serverless backend, AI abstraction layer, and database.
 
-### Phase 1: Application Foundation
+### Phase 1: Application Foundation (COMPLETE)
 - Set up Tailwind CSS, shadcn/ui base component system, and layout scaffolding.
 - Implement core layout navigation (Sidebar, Header, Dashboard frame).
-- Implement global state and TanStack Query API client foundation.
+- Implement global state, React Router navigation, and TanStack Query API client foundation.
 
-### Phase 2: Authentication & PostgreSQL Database
-- Set up Prisma ORM with PostgreSQL database schema (`User`, `Workflow`, `Node`, `Connection`, `Execution`, `Credential`).
+### Phase 2: Authentication & Netlify Database (PostgreSQL + Drizzle ORM) (NEXT)
+- Set up Netlify Database with PostgreSQL schema using Drizzle ORM (`User`, `Workflow`, `Node`, `Connection`, `Execution`, `Credential`).
 - Implement user authentication & session management (JWT / Netlify Functions).
 - Build security middleware for server-side token validation and ownership checking.
 
@@ -39,7 +39,7 @@ This document outlines the sequential phases for building FlowPilot AI.
 - Enable structured prompt processing and output parsing in execution engine.
 
 ### Phase 6: Bring Your Own AI (BYO AI)
-- Build encrypted Credential Vault in PostgreSQL for user API keys.
+- Build encrypted Credential Vault in Netlify Database for user API keys.
 - Extend AI Provider Interface to support user-provided Gemini API keys, OpenAI API keys, and custom providers.
 - Build UI for user AI provider management and model selection in nodes.
 
