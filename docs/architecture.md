@@ -76,14 +76,16 @@ React Frontend
 Netlify Functions
       │
       ▼
-Drizzle ORM
+Drizzle ORM (drizzle-orm/netlify-db)
       │
       ▼
 Netlify Database (PostgreSQL)
 ```
+- **Native Adapter:** Server-side database operations use Netlify's native Drizzle adapter (`drizzle-orm/netlify-db` via `@netlify/db`).
 - **Strict Boundary:** Database access logic (`src/db/`) is restricted exclusively to server-side Netlify Functions.
 - **Zero Client Exposure:** Database credentials and connection strings are never exposed to Vite client bundles or React UI code.
 - **Schema & Migrations:** Managed with Drizzle ORM and `drizzle-kit`, configured with migration outputs under `netlify/database/migrations/`. Application schema definitions are intentionally deferred to Phase 2B.
+- **Production Verification:** Remote production database query execution requires an active linked Netlify Database environment.
 
 ### 2.4 AI Provider Layer
 The AI subsystem uses a provider abstraction layer to decoupling engine execution from specific AI vendors:
