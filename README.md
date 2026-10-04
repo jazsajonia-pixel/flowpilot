@@ -13,7 +13,7 @@ FlowPilot AI is a modern, web-based visual automation platform that enables user
 - **Phase 2A — Database Infrastructure + Drizzle + Netlify Database:** COMPLETE
 - **Phase 2B — Application Database Schema:** COMPLETE
 - **Phase 2C — Authentication & Sessions:** COMPLETE
-- **Phase 2D — Protected API & Ownership Verification:** COMPLETE
+- **Phase 2D — Protected API & Ownership Verification:** IN REVIEW
 
 ---
 
@@ -126,8 +126,8 @@ FlowPilot AI
 3. **Phase 2A:** Database Infrastructure + Drizzle + Netlify Database *(Completed)*
 4. **Phase 2B:** Application Database Schema *(Completed)*
 5. **Phase 2C:** Authentication & Sessions *(Completed)*
-6. **Phase 2D:** Protected API & Ownership Verification *(Completed)*
-7. **Phase 3:** Visual Workflow Builder (React Flow)
+6. **Phase 2D:** Protected API & Ownership Verification *(In review)*
+7. **Phase 3:** Visual Workflow Builder (React Flow) *(Next after Phase 2D)*
 8. **Phase 4:** Workflow Execution Engine
 9. **Phase 5:** Gemini AI Integration
 10. **Phase 6:** Bring Your Own AI (BYO AI)
