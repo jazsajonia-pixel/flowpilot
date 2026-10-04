@@ -9,13 +9,14 @@ import {
   type EdgeChange,
   type NodeChange,
 } from '@xyflow/react';
-import { ArrowLeft, Check, CircleAlert, Save } from 'lucide-react';
+import { ArrowLeft, Check, CircleAlert, LoaderCircle, Play, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { WorkflowCanvas } from '@/components/workflow/WorkflowCanvas';
 import type { FlowEdge, FlowNode } from '@/components/workflow/flow-types';
 import { toFlowEdge, toFlowNode, toWorkflowConnection, toWorkflowNode } from '@/components/workflow/graph-mapping';
-import { getWorkflow, getWorkflowGraph, saveWorkflowGraph, updateWorkflowTitle, WorkflowApiError, type WorkflowGraph, type WorkflowSummary } from '@/lib/workflow-api';
+import { getWorkflow, getWorkflowGraph, runWorkflow, saveWorkflowGraph, updateWorkflowTitle, WorkflowApiError, type WorkflowExecutionSummary, type WorkflowGraph, type WorkflowSummary } from '@/lib/workflow-api';
 import { demoWorkflow, demoWorkflowGraph } from '@/lib/workflow-demo';
 import { isWorkflowConnectionAllowed } from '@/lib/workflow-graph';
 import type { WorkflowNodeDefinition } from '@/types/workflow';
@@ -48,6 +49,11 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isTitleSaving, setIsTitleSaving] = useState(false);
   const [titleError, setTitleError] = useState<string | null>(null);
+  const [isRunDialogOpen, setIsRunDialogOpen] = useState(false);
+  const [runInputText, setRunInputText] = useState('{\n  "body": {}\n}');
+  const [isRunning, setIsRunning] = useState(false);
+  const [runError, setRunError] = useState<string | null>(null);
+  const [latestRun, setLatestRun] = useState<WorkflowExecutionSummary | null>(null);
   const [revision, setRevision] = useState(0);
   const revisionRef = useRef(0);
   const savedRevisionRef = useRef(0);
@@ -203,6 +209,34 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
     }
   }
 
+  async function submitManualRun() {
+    if (demo || !workflowId) return;
+    let input: unknown;
+    try {
+      input = JSON.parse(runInputText);
+    } catch {
+      setRunError('Enter valid JSON for the trigger input.');
+      return;
+    }
+    if (typeof input !== 'object' || input === null || Array.isArray(input)) {
+      setRunError('Trigger input must be a JSON object.');
+      return;
+    }
+
+    setIsRunning(true);
+    setRunError(null);
+    try {
+      await saveGraphNow();
+      const execution = await runWorkflow(workflowId, input as Record<string, unknown>);
+      setLatestRun(execution);
+      setIsRunDialogOpen(false);
+    } catch (reason) {
+      setRunError(errorMessage(reason));
+    } finally {
+      setIsRunning(false);
+    }
+  }
+
   async function handleBack() {
     if (!demo && revisionRef.current > savedRevisionRef.current) {
       try {
@@ -240,7 +274,7 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
     (connection: Connection) => {
       const nodeRefs = nodes.map((node) => ({ id: node.id, type: node.data.nodeType, category: node.data.category }));
       const edgeRefs = edges.map(toWorkflowConnection);
-      if (!isWorkflowConnectionAllowed(connection.source, connection.target, nodeRefs, edgeRefs)) return;
+      if (!isWorkflowConnectionAllowed(connection.source, connection.target, nodeRefs, edgeRefs, connection.sourceHandle, connection.targetHandle)) return;
       if (!connection.source || !connection.target) return;
       setEdges((current) =>
         addEdge<FlowEdge>(
@@ -291,6 +325,14 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
     [markGraphChanged],
   );
 
+  const handleUpdateNodeConfig = useCallback(
+    (nodeId: string, config: Record<string, unknown>) => {
+      setNodes((current) => current.map((node) => (node.id === nodeId ? { ...node, data: { ...node.data, config } } : node)));
+      markGraphChanged();
+    },
+    [markGraphChanged],
+  );
+
   const handleDeleteNode = useCallback(
     (nodeId: string) => {
       setNodes((current) => current.filter((node) => node.id !== nodeId));
@@ -302,6 +344,7 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
   );
 
   const hasUnsavedGraph = revision > savedRevisionRef.current;
+  const hasManualTrigger = nodes.some((node) => node.data.category === 'manual_trigger');
   const saveLabel = demo
     ? 'Preview only'
     : saveState === 'saving'
@@ -380,6 +423,20 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
             <Save className="h-3.5 w-3.5" /> Save
           </Button>
         )}
+        {!demo && (
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            className="shrink-0 gap-2"
+            disabled={!hasManualTrigger || isRunning || saveState === 'saving'}
+            title={hasManualTrigger ? 'Run this workflow with manual input.' : 'Add a Manual Trigger to enable running.'}
+            onClick={() => { setRunError(null); setIsRunDialogOpen(true); }}
+          >
+            {isRunning ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+            {isRunning ? 'Running…' : 'Run'}
+          </Button>
+        )}
       </header>
 
       {demo && (
@@ -393,6 +450,23 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
           <Button size="sm" variant="outline" onClick={() => void saveGraphNow().catch(() => undefined)}>Retry save</Button>
         </div>
       )}
+      {latestRun && !demo && (
+        <section className={`max-h-40 shrink-0 overflow-y-auto border-b px-4 py-2 text-xs ${latestRun.status === 'completed' ? 'bg-emerald-50 text-emerald-950' : 'bg-rose-50 text-rose-950'}`} aria-live="polite">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <strong>Latest run: {latestRun.status} · {latestRun.logs.filter((log) => log.status === 'success').length} successful steps</strong>
+            <span className="font-mono text-[10px]">{latestRun.id.slice(0, 8)}</span>
+          </div>
+          {latestRun.error && <p className="mt-1" role="alert">{latestRun.error}</p>}
+          <ol className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+            {latestRun.logs.map((log) => (
+              <li key={`${log.nodeId}-${log.timestamp}`}>
+                {nodes.find((node) => node.id === log.nodeId)?.data.label ?? 'Workflow step'}: {log.status}
+                {log.error ? ` — ${log.error}` : ''}
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
 
       <ReactFlowProvider>
         <WorkflowCanvas
@@ -405,6 +479,7 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
           onSelectNode={setSelectedNodeId}
           onAddNode={handleAddNode}
           onUpdateNodeLabel={handleUpdateNodeLabel}
+          onUpdateNodeConfig={handleUpdateNodeConfig}
           onDeleteNode={handleDeleteNode}
         />
       </ReactFlowProvider>
@@ -413,6 +488,31 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
         <Link to="/workflows" className="hidden font-medium text-primary hover:underline sm:inline">All workflows</Link>
         {!demo && <span className="sm:hidden">{saveLabel}</span>}
       </footer>
+      <Dialog
+        isOpen={isRunDialogOpen}
+        onClose={() => { if (!isRunning) setIsRunDialogOpen(false); }}
+        title="Run workflow"
+        description="Start this workflow from its Manual Trigger using the JSON input below. Configured public HTTPS actions will run."
+      >
+        <label htmlFor="manual-trigger-input" className="block space-y-2 text-sm font-medium">
+          Trigger input (JSON object)
+          <textarea
+            id="manual-trigger-input"
+            value={runInputText}
+            onChange={(event) => setRunInputText(event.target.value)}
+            maxLength={16_384}
+            rows={8}
+            disabled={isRunning}
+            className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 font-mono text-xs"
+          />
+        </label>
+        {runError && <p className="mt-3 text-sm text-destructive" role="alert">{runError}</p>}
+        <div className="mt-4 flex justify-end">
+          <Button type="button" disabled={isRunning} onClick={() => void submitManualRun()}>
+            {isRunning ? 'Running…' : 'Run now'}
+          </Button>
+        </div>
+      </Dialog>
     </main>
   );
 }

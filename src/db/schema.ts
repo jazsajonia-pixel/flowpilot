@@ -14,8 +14,8 @@ import {
 } from 'drizzle-orm/pg-core';
 
 /**
- * Application schema through Phase 2C.
- * Protected-resource authorization and credential encryption remain later phases.
+ * Application schema through Phase 2C; Phase 4 uses the execution tables defined here.
+ * Credential encryption and long-running execution infrastructure remain later phases.
  */
 
 export const executionStatusEnum = pgEnum('execution_status', [
@@ -136,7 +136,7 @@ export const executions = pgTable(
   'executions',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    // Keep workflow history intact: deletion behavior for executions is deferred to a later phase.
+    // Keep execution history intact; the restrictive foreign key blocks workflow deletion while runs exist.
     workflowId: uuid('workflow_id').notNull().references(() => workflows.id),
     status: executionStatusEnum('status').default('pending').notNull(),
     triggerData: jsonb('trigger_data').$type<unknown>(),

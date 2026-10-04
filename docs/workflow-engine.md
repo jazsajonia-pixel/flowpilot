@@ -1,117 +1,46 @@
-# FlowPilot AI — Workflow Engine Architecture
+# FlowPilot Workflow Engine
 
-This document describes the architectural design, node categories, and execution mechanics of the FlowPilot AI Workflow Execution Engine.
+This document describes the implemented Phase 4 execution contract. The editor can save a larger catalog than the engine can run; only the explicitly supported nodes below are executable today.
 
----
+## Execution flow
 
-## 1. Engine Core Overview
+A signed-in owner starts a workflow manually from the editor. The server checks same-origin intent and workflow ownership, validates the stored graph, requires exactly one Manual Trigger, persists an execution row, evaluates the graph in topological order, stores step summaries, and returns the final result. Execution does not run merely because a workflow is saved or marked active.
 
-The FlowPilot AI Workflow Engine processes directed graph workflows where nodes represent operations (Triggers, AI processing, Logic evaluation, Actions) and edges (Connections) represent data flow and execution control paths.
+The runner processes each graph node at most once. Nodes with no active incoming edge are logged as skipped. A Condition activates only its matching `true` or `false` output edge; the older `out` handle is retained as an unconditional path for graphs saved before Phase 4. Cycles and invalid graph references are rejected.
 
-```
-Incoming Event (Trigger)
-           │
-           ▼
-┌─────────────────────┐
-│  Trigger Execution  │ ──> Produces initial Output Context
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│  Graph Traversal    │ ──> Evaluates target node dependencies
-└──────────┬──────────┘
-           │
-           ├───> [ AI Node ] ───────> Query AI Provider Interface
-           ├───> [ Logic Node ] ────> Evaluate Condition / Branching
-           └───> [ Action Node ] ───> Perform Side Effect (HTTP, Email, DB)
-           │
-           ▼
-┌─────────────────────┐
-│  Execution Logging  │ ──> Persists execution state & step logs to DB
-└─────────────────────┘
-```
+## Phase 4 node support
 
----
+| Category | Behavior |
+|---|---|
+| Manual Trigger | Starts a user-initiated run with a JSON object as `trigger` data. |
+| Condition | Compares values using equals, not-equals, contains, not-contains, numeric greater/less-than, is-empty, and is-not-empty. True/False handles route the graph. |
+| Filter | Keeps array entries whose configured item field meets one of those comparison operators. The result is exposed as `steps.<node-uuid>.items` and `.count`. |
+| HTTP Request | GET, POST, PUT, PATCH, or DELETE over restricted outbound HTTPS. GET/DELETE have no request body; other methods may send a JSON body. |
+| Webhook Action | Sends an outgoing HTTPS POST with an optional JSON body. |
 
-## 2. Planned Node Categories & Specifications
+The Webhook Trigger and Schedule Trigger are not implemented here; they are Phase 7. AI nodes are Phase 5. Switch, Delay, email, and database actions are later work. If a reachable unsupported node is encountered, the run fails safely at that step.
 
-### 2.1 Triggers (Starting Points)
-Every workflow begins with exactly one active trigger node:
-- **Manual Trigger:** Manually initiated by user via UI button click or API call.
-- **Webhook Trigger:** Exposes an HTTP endpoint (`/api/webhooks/:workflowId`) that triggers on incoming HTTP POST/GET requests.
-- **Schedule Trigger:** Triggers execution automatically based on a cron expression or timer interval.
+## Execution context and templates
 
-### 2.2 AI Nodes (Intelligence)
-Nodes that send structured prompts to the AI Provider Interface:
-- **Gemini AI:** General-purpose AI text generation and chat completion node.
-- **AI Classification:** Classifies input text into predefined labels/categories using structured output schema.
-- **AI Extraction:** Extracts structured entities (JSON/key-values) from unstructured text.
-- **AI Summarization:** Concise text summarization with customizable target length and bullet formatting.
-- **AI Generation:** Creative generation node for emails, code, responses, or formatted copy.
+The manual input object is available under `trigger`. A node result is stored under `steps.<node-uuid>`. Filter evaluation also exposes the current record as `item` internally. Templates use expressions such as `{{trigger.body.status}}`, `{{steps.<node-uuid>.result}}`, and `{{steps.<node-uuid>.items}}`. A whole-string template preserves its JSON type; templates embedded in a larger string are stringified.
 
-### 2.3 Logic Nodes (Flow Control)
-Nodes that route execution or manipulate data flow:
-- **Condition / IF:** Evaluates rules (e.g., `value == 'urgent'`). Routes execution to `true` or `false` output handle.
-- **Switch:** Evaluates multiple expression branches to route flow to one of several output paths.
-- **Filter:** Filters array items based on evaluation criteria.
-- **Delay:** Halts execution for a specified duration (e.g., wait 5 minutes) before continuing.
+HTTP/webhook request bodies are configured as JSON text. The engine parses JSON first, resolves templates in its values, then serializes the resulting JSON. Template path traversal is own-property-only and rejects prototype-related path segments.
 
-### 2.4 Action Nodes (Side Effects)
-Nodes that interact with external services or systems:
-- **Send Email:** Dispatches transactional emails via configured SMTP or transactional email API.
-- **HTTP Request:** Makes custom REST API calls (GET, POST, PUT, DELETE) with configurable headers, parameters, and payload.
-- **Create Database Record:** Inserts records into configured external or system database tables.
-- **Update Database Record:** Modifies database records matching specific keys.
-- **Webhook Action:** Outgoing HTTP POST webhook call to third-party endpoints.
+## Limits and outbound safeguards
 
----
+- At most 50 graph nodes are eligible for a manual run; at most 25 nodes can execute in one run.
+- Graph evaluation has a five-second budget. Each outbound request shares a maximum 2.5-second budget with DNS resolution and connection/response processing.
+- Manual input is capped at 16 KiB. Outbound request and response bodies are capped at 32 KiB and 64 KiB respectively. URL length is capped at 2,048 characters.
+- Outbound requests must use HTTPS on port 443, without embedded URL credentials. IP literals and every DNS A/AAAA answer must classify as public unicast. The selected public address is pinned to the connection while TLS verification and hostname SNI remain enabled.
+- Redirects are not followed. User-supplied headers and credentials are not supported. Non-2xx responses fail the action.
+- The runner does not make requests during graph save or preview. An outbound call happens only when the signed-in user explicitly starts a run.
 
-## 3. Data Flow & Variable Interpolation
+## Persistence and privacy
 
-When a node executes, its output payload is stored in the **Execution Context**:
+An `executions` record transitions through `pending` → `running` → `completed` or `failed`. A row in `execution_logs` records the node UUID, status, timestamp, and limited safe metadata. Trigger data persists only a received flag and field count; node logs persist category/result/count/status/response-size summaries, not raw trigger data, HTTP bodies, response bodies, URLs, or exception stacks. Error text is generic except for a numeric external HTTP status code.
 
-```json
-{
-  "trigger": {
-    "body": { "customer_name": "Jane Doe", "email": "jane@example.com", "issue": "Billing question" },
-    "headers": { "content-type": "application/json" }
-  },
-  "steps": {
-    "node_ai_classify": {
-      "category": "billing",
-      "priority": "high"
-    }
-  }
-}
-```
+Execution history is stored in the database, but a full execution-history browser, status polling, retries, idempotency keys, queue/background workers, rate limiting, error branches, credential vault integration, and deployment monitoring are not part of Phase 4. A completed response is returned to the editor for immediate feedback; no live database was available for an integration run during this implementation.
 
-Downstream nodes can reference outputs from previous nodes using expression syntax:
-- `{{steps.node_ai_classify.category}}`
-- `{{trigger.body.email}}`
+## Reliability and production boundary
 
----
-
-## 4. Execution State & Logging
-
-Each workflow execution creates a persistent record in PostgreSQL with the following status flow:
-
-1. **Pending:** Execution scheduled or enqueued.
-2. **Running:** Engine actively evaluating graph nodes.
-3. **Completed:** All reachable graph paths executed successfully.
-4. **Failed:** Unhandled node error halted execution.
-
-For every node processed during an execution, a detailed `ExecutionLog` is created containing:
-- `nodeId`
-- `status` (`success` | `error` | `skipped`)
-- `timestamp`
-- `inputData` (interpolated input payload)
-- `outputData` (node execution output)
-- `error` (stack trace / error description if failed)
-
----
-
-## 5. Error Handling & Retry Mechanics
-
-- **Node-Level Retries:** Nodes can be configured with retry policies (e.g., retry up to 3 times on HTTP 5xx or rate limit error with exponential backoff).
-- **Error Handles:** Nodes can expose an `onError` output branch allowing workflows to catch errors gracefully (e.g., send notification on failure instead of failing the entire workflow execution).
-- **Timeouts:** Individual node executions have strict maximum runtime limits (e.g., 30s max for HTTP requests) to prevent hung serverless instances.
+Manual executions are synchronous and bounded rather than queued. Their graph budget leaves time for request/database work within an ordinary serverless invocation; long-running workflows need a durable background/queue design in a later phase. External public-endpoint actions remain a potential abuse surface without rate limits and deployment-level egress controls. Do not enable production execution until the deployment environment, database migrations, rate limits, and abuse monitoring have been reviewed.

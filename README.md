@@ -15,7 +15,8 @@ FlowPilot AI is a modern, web-based visual automation platform that enables user
 - **Phase 2C — Authentication & Sessions:** COMPLETE
 - **Phase 2D — Protected API & Ownership Verification:** COMPLETE
 - **Phase 3 — Visual Workflow Builder:** COMPLETE
-- **Phase 4 — Workflow Execution Engine:** NEXT
+- **Phase 4 — Workflow Execution Engine:** IN REVIEW
+- **Phase 5 — Gemini AI Integration:** Next after Phase 4 merges
 
 ---
 
@@ -117,6 +118,7 @@ FlowPilot AI
 - **Server-Side Credential & Database Handling:** Database queries run in Netlify Functions. Credential encryption and secret-management endpoints are planned for Phase 6 and are not yet implemented.
 - **Strict Payload Validation:** All API requests are validated with **Zod** schemas.
 - **Server-Side Authentication & Authorization:** Workflow metadata and graph endpoints require server-verified sessions and owner-scoped queries. Other placeholder frontend pages are not protected, and client-side session display is not access control.
+- **Execution Safety:** Manual execution rechecks workflow ownership, validates graph settings, limits runtime/steps/request sizes, and blocks non-public outbound destinations. Logs omit submitted values and HTTP bodies. Rate limiting, abuse monitoring, and deployment egress controls are still required before production execution.
 - **Credential Masking:** Sensitive tokens are masked in UI and logs (`sk-••••••••1234`).
 
 ---
@@ -130,7 +132,7 @@ FlowPilot AI
 5. **Phase 2C:** Authentication & Sessions *(Completed)*
 6. **Phase 2D:** Protected API & Ownership Verification *(Completed)*
 7. **Phase 3:** Visual Workflow Builder (React Flow) *(Completed)*
-8. **Phase 4:** Workflow Execution Engine *(Next)*
+8. **Phase 4:** Workflow Execution Engine *(In review)*
 9. **Phase 5:** Gemini AI Integration
 10. **Phase 6:** Bring Your Own AI (BYO AI)
 11. **Phase 7:** Automation Integrations & Webhooks
@@ -151,6 +153,7 @@ See [`docs/roadmap.md`](docs/roadmap.md) for full details.
 - [`docs/workflow-api.md`](docs/workflow-api.md) — Phase 2D protected workflow metadata routes and ownership rules.
 - [`docs/workflow-builder.md`](docs/workflow-builder.md) — Phase 3 editor interactions, graph validation, and persistence contract.
 - [`docs/workflow-engine.md`](docs/workflow-engine.md) — Node Types, Graph Execution, and Logging Specs.
+- [`docs/phase-4-references.md`](docs/phase-4-references.md) — Official sources used for execution limits and outbound request safeguards.
 - [`docs/roadmap.md`](docs/roadmap.md) — Multi-Phase Development Roadmap.
 
 ---

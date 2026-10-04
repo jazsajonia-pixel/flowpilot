@@ -31,6 +31,7 @@ test('workflow graph accepts a valid acyclic trigger-to-action path', () => {
 
 test('connection validation rejects self-links, missing endpoints, duplicate links, trigger targets, and cycles', () => {
   assert.equal(isWorkflowConnectionAllowed(triggerId, aiId, nodes, []), true);
+  assert.equal(isWorkflowConnectionAllowed(triggerId, aiId, nodes, [], 'true', 'in'), false);
   assert.equal(isWorkflowConnectionAllowed(triggerId, triggerId, nodes, []), false);
   assert.equal(isWorkflowConnectionAllowed('missing', aiId, nodes, []), false);
   assert.equal(isWorkflowConnectionAllowed(aiId, triggerId, nodes, []), false);
@@ -69,6 +70,60 @@ test('server graph schema rejects cycles, multiple triggers, and unapproved node
   assert.equal(cycle.success, false);
   assert.equal(multipleTriggers.success, false);
   assert.equal(config.success, false);
+});
+
+test('server graph schema accepts supported Phase 4 settings and rejects credentials or arbitrary headers', () => {
+  const supported = workflowGraphSchema.safeParse({
+    nodes: [
+      nodes[0],
+      { id: aiId, type: 'logic', category: 'condition', label: 'Condition', position: { x: 0, y: 0 }, config: { left: '{{trigger.body.status}}', operator: 'equals', right: 'approved' } },
+      { id: actionId, type: 'action', category: 'http_request', label: 'HTTP', position: { x: 1, y: 1 }, config: { url: 'https://example.com', method: 'POST', body: '{"status":"{{trigger.body.status}}"}' } },
+    ],
+    connections: [{ id: connectionId1, sourceNodeId: triggerId, targetNodeId: aiId }],
+  });
+  const headerSecret = workflowGraphSchema.safeParse({
+    nodes: [{ id: actionId, type: 'action', category: 'http_request', label: 'HTTP', position: { x: 0, y: 0 }, config: { url: 'https://example.com', headers: { Authorization: 'secret' } } }],
+    connections: [],
+  });
+  const promptSecret = workflowGraphSchema.safeParse({
+    nodes: [{ id: aiId, type: 'ai', category: 'gemini_ai', label: 'AI', position: { x: 0, y: 0 }, config: { apiKey: 'never-store-here' } }],
+    connections: [],
+  });
+  const bodyOnGet = workflowGraphSchema.safeParse({
+    nodes: [{ id: actionId, type: 'action', category: 'http_request', label: 'HTTP', position: { x: 0, y: 0 }, config: { url: 'https://example.com', method: 'GET', body: '{"unexpected":true}' } }],
+    connections: [],
+  });
+
+  assert.equal(supported.success, true);
+  assert.equal(headerSecret.success, false);
+  assert.equal(promptSecret.success, false);
+  assert.equal(bodyOnGet.success, false);
+});
+
+test('server graph schema rejects unknown source and target handles', () => {
+  const invalidTriggerHandle = workflowGraphSchema.safeParse({
+    nodes,
+    connections: [{ id: connectionId1, sourceNodeId: triggerId, sourceHandle: 'true', targetNodeId: aiId, targetHandle: 'in' }],
+  });
+  const invalidConditionHandle = workflowGraphSchema.safeParse({
+    nodes: [
+      nodes[0],
+      { id: aiId, type: 'logic', category: 'condition', label: 'Condition', position: { x: 0, y: 0 }, config: {} },
+      nodes[2],
+    ],
+    connections: [
+      { id: connectionId1, sourceNodeId: triggerId, sourceHandle: 'out', targetNodeId: aiId, targetHandle: 'in' },
+      { id: connectionId2, sourceNodeId: aiId, sourceHandle: 'maybe', targetNodeId: actionId, targetHandle: 'in' },
+    ],
+  });
+  const invalidTargetHandle = workflowGraphSchema.safeParse({
+    nodes,
+    connections: [{ id: connectionId1, sourceNodeId: triggerId, targetNodeId: aiId, targetHandle: 'true' }],
+  });
+
+  assert.equal(invalidTriggerHandle.success, false);
+  assert.equal(invalidConditionHandle.success, false);
+  assert.equal(invalidTargetHandle.success, false);
 });
 
 test('server graph schema rejects cross-workflow and duplicate connections', () => {

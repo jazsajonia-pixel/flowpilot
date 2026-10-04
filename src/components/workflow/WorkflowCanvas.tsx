@@ -14,6 +14,7 @@ import {
 import { ArrowUpRight, GitBranch, Plus, Sparkles, Trash2, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NodeConfigurationEditor } from './NodeConfigurationEditor';
 import { NODE_CATALOG, type NodeType, type WorkflowNodeDefinition } from '@/types/workflow';
 import { isWorkflowConnectionAllowed } from '@/lib/workflow-graph';
 import { toWorkflowConnection } from './graph-mapping';
@@ -31,6 +32,7 @@ interface WorkflowCanvasProps {
   onSelectNode: (nodeId: string | null) => void;
   onAddNode: (definition: WorkflowNodeDefinition, position: { x: number; y: number }) => void;
   onUpdateNodeLabel: (nodeId: string, label: string) => void;
+  onUpdateNodeConfig: (nodeId: string, config: Record<string, unknown>) => void;
   onDeleteNode: (nodeId: string) => void;
 }
 
@@ -54,7 +56,7 @@ export function WorkflowCanvas(props: WorkflowCanvasProps) {
   const graphEdges = useMemo(() => props.edges.map(toWorkflowConnection), [props.edges]);
   const isValidConnection = useCallback(
     (connection: Connection | FlowEdge) =>
-      isWorkflowConnectionAllowed(connection.source, connection.target, graphNodes, graphEdges),
+      isWorkflowConnectionAllowed(connection.source, connection.target, graphNodes, graphEdges, connection.sourceHandle, connection.targetHandle),
     [graphNodes, graphEdges],
   );
   const hasTrigger = props.nodes.some((node) => node.data.nodeType === 'trigger');
@@ -221,9 +223,10 @@ export function WorkflowCanvas(props: WorkflowCanvasProps) {
               <dt className="text-muted-foreground">Position</dt>
               <dd className="text-right font-mono">{Math.round(selectedNode.position.x)}, {Math.round(selectedNode.position.y)}</dd>
             </dl>
-            <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-[11px] leading-5 text-amber-950">
-              Node-specific settings are added in later phases. Do not store API keys, passwords, or tokens in workflow configuration.
-            </p>
+            <NodeConfigurationEditor
+              node={selectedNode}
+              onChange={(config) => props.onUpdateNodeConfig(selectedNode.id, config)}
+            />
           </div>
         ) : (
           <div className="rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground">
