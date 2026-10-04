@@ -132,8 +132,8 @@ FlowPilot AI
 5. **Phase 2C:** Authentication & Sessions *(Completed)*
 6. **Phase 2D:** Protected API & Ownership Verification *(Completed)*
 7. **Phase 3:** Visual Workflow Builder (React Flow) *(Completed)*
-8. **Phase 4:** Workflow Execution Engine *(In review)*
-9. **Phase 5:** Gemini AI Integration
+8. **Phase 4:** Workflow Execution Engine *(Completed)*
+9. **Phase 5:** Gemini AI Integration *(In progress)*
 10. **Phase 6:** Bring Your Own AI (BYO AI)
 11. **Phase 7:** Automation Integrations & Webhooks
 12. **Phase 8:** Execution Monitoring & Reliability
