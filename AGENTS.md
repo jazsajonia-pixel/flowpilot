@@ -8,7 +8,7 @@ This document contains instructions and guidelines for AI coding agents (such as
 
 **FlowPilot AI** is an AI-powered workflow automation SaaS application.
 
-Users visually create automated workflows that connect triggers, AI processing, conditions, APIs, databases, notifications, and other actions. The application provides a modern, intuitive visual workflow editor built on top of React Flow, backed by a Node.js API, PostgreSQL database, and Netlify Functions.
+Users visually create automated workflows that connect triggers, AI processing, conditions, APIs, databases, notifications, and other actions. The application provides a modern, intuitive visual workflow editor built on top of React Flow, backed by a Node.js API, Netlify Database (PostgreSQL with Drizzle ORM), and Netlify Functions.
 
 ---
 
@@ -52,7 +52,7 @@ Security is paramount in FlowPilot AI. Every contribution must follow these secu
 - **No Secrets in Source Control:** Never commit API keys, tokens, database URLs, or real credentials into Git.
 - **Ignore Local Environments:** `.env` and `.env.local` must remain in `.gitignore`. Always maintain `.env.example` with template values only.
 - **Server-side Credential Handling:** User-provided third-party API credentials (e.g., Gemini, OpenAI keys) must be processed and executed strictly on the server side (Netlify Functions / API layer).
-- **Encryption at Rest:** User API credentials stored in PostgreSQL must be encrypted at rest.
+- **Encryption at Rest:** User API credentials stored in Netlify Database must be encrypted at rest.
 - **API Request Validation:** All incoming API payloads must be validated on the server side using **Zod** schemas.
 - **Server-side Auth & Authorization:** Enforce authentication and authorization server-side on every protected API endpoint. Never rely on client-side state for access control.
 - **No Client Credential Exposure:** Never expose database connection strings or administrative credentials to client apps.

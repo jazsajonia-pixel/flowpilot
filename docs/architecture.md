@@ -42,7 +42,7 @@ FlowPilot AI
 │   ├── User Bring-Your-Own OpenAI Provider
 │   └── Custom Compatible AI Provider Adapters
 │
-└── Database Layer (PostgreSQL / Prisma ORM)
+└── Database Layer (Netlify Database / PostgreSQL / Drizzle ORM)
     ├── Users & Auth
     ├── Workflows & Templates
     ├── Nodes & Connections
@@ -96,35 +96,14 @@ The AI subsystem uses a provider abstraction layer to decoupling engine executio
 
 - **FlowPilot Gemini:** Built-in default AI engine using platform API keys.
 - **BYO Providers:** Users can register custom API keys for Google Gemini, OpenAI, or compatible custom endpoints.
-- **Security:** Third-party AI keys are stored encrypted at rest in PostgreSQL and accessed exclusively in serverless Netlify Functions during node execution.
+- **Security:** Third-party AI keys are stored encrypted at rest in Netlify Database (PostgreSQL) and accessed exclusively in serverless Netlify Functions during node execution.
 
 ### 2.4 Workflow Execution Engine
 - **Graph Evaluation:** Graph traversal engine that executes triggered flows sequentially or in parallel based on node dependencies.
 - **Context Injection:** Outputs from preceding nodes are available to downstream nodes via double-curly expressions or step references (e.g., `{{steps.trigger.data.body}}`).
 - **Resilience:** Built-in node retry mechanics, error capture, branch skipping on negative evaluation conditions, and structured execution logging.
 
-### 2.5 Database Layer (PostgreSQL & Prisma)
-- **Database:** PostgreSQL hosted on Neon / Supabase.
-- **ORM:** Prisma ORM for schema management, migrations, and type-safe database queries.
+### 2.5 Database Layer (Netlify Database, PostgreSQL & Drizzle ORM)
+- **Database:** Netlify Database (PostgreSQL platform for FlowPilot).
+- **ORM:** Drizzle ORM for schema management, migrations, and type-safe database queries.
 - **Core Entities:** `User`, `Workflow`, `Node`, `Connection`, `Execution`, `ExecutionLog`, `Credential`, `Integration`.
-
----
-
-## 3. Data Flow
-
-### 3.1 Workflow Creation Flow
-1. User builds workflow graph in visual builder (React Flow UI).
-2. UI submits updated graph JSON payload to `/api/workflows`.
-3. Server validates JSON schema with Zod and verifies user identity.
-4. Prisma writes updated workflow structure, nodes, and edges to PostgreSQL.
-
-### 3.2 Workflow Execution Flow
-1. An incoming event occurs (e.g., Webhook HTTP request, manual UI click, scheduled cron timer).
-2. Execution engine initializes a `WorkflowExecution` record with state `running`.
-3. Engine runs starting trigger node, capturing input payload into the execution context.
-4. Engine processes graph nodes in topological order:
-   - If AI node: Engine queries AI Provider Interface with selected credential adapter.
-   - If Logic node: Engine evaluates conditions and decides which output handle branch to follow.
-   - If Action node: Engine performs HTTP request, sends email, or updates database.
-5. Node output data is recorded into `ExecutionLog` entries.
-6. Engine updates `WorkflowExecution` state to `completed` or `failed`.

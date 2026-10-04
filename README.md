@@ -6,11 +6,11 @@ FlowPilot AI is a modern, web-based visual automation platform that enables user
 
 ---
 
-## 📌 Current Development Phase
+## 📌 Current Development Status
 
-**Current Phase: Phase 0 — Project Constitution & Architecture**
-
-> Phase 0 establishes the architectural constitution, repository layout, security rules, and AI provider abstraction foundation. Application features, authentication, database migrations, visual canvas UI, and workflow execution engines will be implemented in subsequent development phases.
+- **Phase 0 — Project Constitution & Architecture:** COMPLETE
+- **Phase 1 — Application Foundation:** COMPLETE
+- **Phase 2 — Authentication & Netlify Database:** NEXT
 
 ---
 
@@ -39,7 +39,7 @@ Condition (IF Priority == "High")
 - **Framework:** React 18 with TypeScript
 - **Build Tool:** Vite
 - **Styling:** Tailwind CSS & shadcn/ui component architecture
-- **Visual Builder:** React Flow (`reactflow`)
+- **Visual Builder:** React Flow (`reactflow`) *(Planned for Phase 3)*
 - **Icons:** Lucide React (`lucide-react`)
 - **Routing:** React Router (`react-router-dom`)
 - **Data Fetching:** TanStack Query (`@tanstack/react-query`)
@@ -51,8 +51,8 @@ Condition (IF Priority == "High")
 - **Serverless Hosting:** Netlify Functions
 
 ### Database
-- **Database:** PostgreSQL (Neon / Supabase)
-- **ORM:** Prisma ORM
+- **Database:** Netlify Database (PostgreSQL)
+- **ORM:** Drizzle ORM *(Planned for Phase 2)*
 
 ### AI Layer
 - **Default Built-in Provider:** Google Gemini API
@@ -94,7 +94,7 @@ FlowPilot AI
 │   ├── User OpenAI (BYO)
 │   └── Custom Provider Adapters
 │
-└── Database (PostgreSQL / Prisma)
+└── Database (Netlify Database / PostgreSQL / Drizzle ORM)
     ├── Users
     ├── Workflows & Nodes
     ├── Executions & Step Logs
@@ -107,7 +107,7 @@ FlowPilot AI
 
 - **Zero Secrets in Client:** API keys and credentials are never exposed to frontend code or client bundles.
 - **Git Hygiene:** Secrets and `.env` files are strictly excluded from source control. Template configuration is provided in `.env.example`.
-- **Server-Side Credential Handling:** Third-party user API keys are handled server-side in Netlify Functions and encrypted at rest in PostgreSQL.
+- **Server-Side Credential Handling:** Third-party user API keys are handled server-side in Netlify Functions and encrypted at rest in Netlify Database.
 - **Strict Payload Validation:** All API requests are validated with **Zod** schemas.
 - **Server-Side Authorization:** Workflow ownership and authorization are enforced strictly server-side.
 - **Credential Masking:** Sensitive tokens are masked in UI and logs (`sk-••••••••1234`).
@@ -116,9 +116,9 @@ FlowPilot AI
 
 ## 🗺️ Roadmap Summary
 
-1. **Phase 0:** Project Constitution & Architecture *(Current)*
-2. **Phase 1:** Application Foundation & Component System
-3. **Phase 2:** Authentication & PostgreSQL Database (Prisma)
+1. **Phase 0:** Project Constitution & Architecture *(Completed)*
+2. **Phase 1:** Application Foundation *(Completed)*
+3. **Phase 2:** Authentication & Netlify Database (PostgreSQL + Drizzle ORM) *(Next)*
 4. **Phase 3:** Visual Workflow Builder (React Flow)
 5. **Phase 4:** Workflow Execution Engine
 6. **Phase 5:** Gemini AI Integration
