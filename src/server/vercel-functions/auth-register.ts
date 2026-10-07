@@ -1,11 +1,11 @@
 import type { Config } from '@netlify/functions';
-import { db } from '../../src/db';
-import { users } from '../../src/db/schema';
-import { hashPassword } from '../../src/server/auth/password';
-import { isSameOriginRequest, isSecureRequest, jsonResponse, parseJsonBody } from '../../src/server/auth/http';
-import { createUserSession, revokeUserSession } from '../../src/server/auth/session-store';
-import { readSessionToken, serializeSessionCookie } from '../../src/server/auth/session-token';
-import { registrationSchema } from '../../src/server/auth/validation';
+import { db } from '../../db';
+import { users } from '../../db/schema';
+import { hashPassword } from '../../server/auth/password';
+import { isSameOriginRequest, isSecureRequest, jsonResponse, parseJsonBody } from '../../server/auth/http';
+import { createUserSession, revokeUserSession } from '../../server/auth/session-store';
+import { readSessionToken, serializeSessionCookie } from '../../server/auth/session-token';
+import { registrationSchema } from '../../server/auth/validation';
 
 export const config: Config = {
   path: '/api/auth/register',

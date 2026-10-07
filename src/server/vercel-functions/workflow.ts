@@ -1,12 +1,12 @@
 import type { Config, Context } from '@netlify/functions';
 import { eq } from 'drizzle-orm';
-import { db } from '../../src/db';
-import { connections, workflowNodes, workflows } from '../../src/db/schema';
-import { isSameOriginRequest, jsonResponse, parseJsonBody } from '../../src/server/auth/http';
-import { getRequestUser } from '../../src/server/auth/request-user';
-import { workflowGraphSchema } from '../../src/server/workflows/graph-validation';
-import { workflowOwnerScope } from '../../src/server/workflows/ownership';
-import { updateWorkflowSchema, workflowIdSchema } from '../../src/server/workflows/validation';
+import { db } from '../../db';
+import { connections, workflowNodes, workflows } from '../../db/schema';
+import { isSameOriginRequest, jsonResponse, parseJsonBody } from '../../server/auth/http';
+import { getRequestUser } from '../../server/auth/request-user';
+import { workflowGraphSchema } from '../../server/workflows/graph-validation';
+import { workflowOwnerScope } from '../../server/workflows/ownership';
+import { updateWorkflowSchema, workflowIdSchema } from '../../server/workflows/validation';
 
 export const config: Config = {
   path: '/api/workflows/:workflowId',

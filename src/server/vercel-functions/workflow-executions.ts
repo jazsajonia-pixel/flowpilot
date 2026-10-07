@@ -1,17 +1,17 @@
 import type { Config, Context } from '@netlify/functions';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { db } from '../../src/db';
-import { connections, credentials, executions, executionLogs, workflowNodes, workflows } from '../../src/db/schema';
-import { getRequestUser } from '../../src/server/auth/request-user';
-import { isSameOriginRequest, jsonResponse, parseJsonBody } from '../../src/server/auth/http';
-import { executeWorkflowGraph } from '../../src/server/execution/engine';
-import { summarizeTriggerInput } from '../../src/server/execution/logging';
-import { isAIProviderId } from '../../src/types/ai';
-import { createOwnerAIProviderResolver } from '../../src/server/ai/provider-resolver';
-import { workflowGraphSchema } from '../../src/server/workflows/graph-validation';
-import { workflowOwnerScope } from '../../src/server/workflows/ownership';
-import { workflowIdSchema } from '../../src/server/workflows/validation';
+import { db } from '../../db';
+import { connections, credentials, executions, executionLogs, workflowNodes, workflows } from '../../db/schema';
+import { getRequestUser } from '../../server/auth/request-user';
+import { isSameOriginRequest, jsonResponse, parseJsonBody } from '../../server/auth/http';
+import { executeWorkflowGraph } from '../../server/execution/engine';
+import { summarizeTriggerInput } from '../../server/execution/logging';
+import { isAIProviderId } from '../../types/ai';
+import { createOwnerAIProviderResolver } from '../../server/ai/provider-resolver';
+import { workflowGraphSchema } from '../../server/workflows/graph-validation';
+import { workflowOwnerScope } from '../../server/workflows/ownership';
+import { workflowIdSchema } from '../../server/workflows/validation';
 
 const MAX_EXECUTION_BODY_BYTES = 16 * 1024;
 const startExecutionSchema = z.object({ input: z.record(z.unknown()).optional() }).strict();

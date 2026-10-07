@@ -1,12 +1,12 @@
 import type { Config, Context } from '@netlify/functions';
 import { and, eq } from 'drizzle-orm';
-import { db } from '../../src/db';
-import { connections, workflowNodes, workflows } from '../../src/db/schema';
-import { getRequestUser } from '../../src/server/auth/request-user';
-import { isSameOriginRequest, jsonResponse, parseJsonBody } from '../../src/server/auth/http';
-import { workflowOwnerScope } from '../../src/server/workflows/ownership';
-import { workflowGraphSchema } from '../../src/server/workflows/graph-validation';
-import { workflowIdSchema } from '../../src/server/workflows/validation';
+import { db } from '../../db';
+import { connections, workflowNodes, workflows } from '../../db/schema';
+import { getRequestUser } from '../../server/auth/request-user';
+import { isSameOriginRequest, jsonResponse, parseJsonBody } from '../../server/auth/http';
+import { workflowOwnerScope } from '../../server/workflows/ownership';
+import { workflowGraphSchema } from '../../server/workflows/graph-validation';
+import { workflowIdSchema } from '../../server/workflows/validation';
 
 const MAX_GRAPH_BODY_BYTES = 512 * 1024;
 

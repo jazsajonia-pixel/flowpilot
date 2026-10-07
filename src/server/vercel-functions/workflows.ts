@@ -1,11 +1,11 @@
 import type { Config } from '@netlify/functions';
 import { desc, eq } from 'drizzle-orm';
-import { db } from '../../src/db';
-import { workflows } from '../../src/db/schema';
-import { isSameOriginRequest, jsonResponse, parseJsonBody } from '../../src/server/auth/http';
-import { getRequestUser } from '../../src/server/auth/request-user';
-import { createWorkflowSchema } from '../../src/server/workflows/validation';
-import { createWebhookToken } from '../../src/server/workflows/webhook-token';
+import { db } from '../../db';
+import { workflows } from '../../db/schema';
+import { isSameOriginRequest, jsonResponse, parseJsonBody } from '../../server/auth/http';
+import { getRequestUser } from '../../server/auth/request-user';
+import { createWorkflowSchema } from '../../server/workflows/validation';
+import { createWebhookToken } from '../../server/workflows/webhook-token';
 
 export const config: Config = {
   path: '/api/workflows',

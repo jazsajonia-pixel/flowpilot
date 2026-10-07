@@ -1,10 +1,10 @@
 import type { Config, Context } from '@netlify/functions';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { db } from '../../src/db';
-import { credentials } from '../../src/db/schema';
-import { getRequestUser } from '../../src/server/auth/request-user';
-import { isSameOriginRequest, jsonResponse } from '../../src/server/auth/http';
+import { db } from '../../db';
+import { credentials } from '../../db/schema';
+import { getRequestUser } from '../../server/auth/request-user';
+import { isSameOriginRequest, jsonResponse } from '../../server/auth/http';
 
 const credentialIdSchema = z.string().uuid();
 

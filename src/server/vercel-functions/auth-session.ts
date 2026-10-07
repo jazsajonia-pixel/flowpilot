@@ -1,7 +1,7 @@
 import type { Config } from '@netlify/functions';
-import { jsonResponse, isSecureRequest } from '../../src/server/auth/http';
-import { getAuthenticatedUser } from '../../src/server/auth/session-store';
-import { readSessionToken, serializeClearedSessionCookie } from '../../src/server/auth/session-token';
+import { jsonResponse, isSecureRequest } from '../../server/auth/http';
+import { getAuthenticatedUser } from '../../server/auth/session-store';
+import { readSessionToken, serializeClearedSessionCookie } from '../../server/auth/session-token';
 
 export const config: Config = {
   path: '/api/auth/session',

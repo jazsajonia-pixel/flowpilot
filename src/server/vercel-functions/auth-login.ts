@@ -1,12 +1,12 @@
 import type { Config } from '@netlify/functions';
 import { eq } from 'drizzle-orm';
-import { db } from '../../src/db';
-import { users } from '../../src/db/schema';
-import { jsonResponse, isSameOriginRequest, isSecureRequest, parseJsonBody } from '../../src/server/auth/http';
-import { verifyPassword } from '../../src/server/auth/password';
-import { createUserSession, revokeUserSession } from '../../src/server/auth/session-store';
-import { readSessionToken, serializeSessionCookie } from '../../src/server/auth/session-token';
-import { loginSchema } from '../../src/server/auth/validation';
+import { db } from '../../db';
+import { users } from '../../db/schema';
+import { jsonResponse, isSameOriginRequest, isSecureRequest, parseJsonBody } from '../../server/auth/http';
+import { verifyPassword } from '../../server/auth/password';
+import { createUserSession, revokeUserSession } from '../../server/auth/session-store';
+import { readSessionToken, serializeSessionCookie } from '../../server/auth/session-token';
+import { loginSchema } from '../../server/auth/validation';
 
 export const config: Config = {
   path: '/api/auth/login',

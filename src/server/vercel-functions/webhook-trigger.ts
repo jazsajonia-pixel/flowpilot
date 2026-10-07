@@ -1,12 +1,12 @@
 import type { Config, Context } from '@netlify/functions';
 import { and, eq } from 'drizzle-orm';
-import { db } from '../../src/db';
-import { connections, credentials, executions, executionLogs, workflowNodes, workflows } from '../../src/db/schema';
-import { createOwnerAIProviderResolver } from '../../src/server/ai/provider-resolver';
-import { executeWorkflowGraph } from '../../src/server/execution/engine';
-import { handleWebhookRequest } from '../../src/server/workflows/webhook-trigger-core';
-import type { WorkflowGraphInput } from '../../src/server/workflows/graph-validation';
-import { isAIProviderId } from '../../src/types/ai';
+import { db } from '../../db';
+import { connections, credentials, executions, executionLogs, workflowNodes, workflows } from '../../db/schema';
+import { createOwnerAIProviderResolver } from '../../server/ai/provider-resolver';
+import { executeWorkflowGraph } from '../../server/execution/engine';
+import { handleWebhookRequest } from '../../server/workflows/webhook-trigger-core';
+import type { WorkflowGraphInput } from '../../server/workflows/graph-validation';
+import { isAIProviderId } from '../../types/ai';
 
 export const config: Config = {
   path: '/api/hooks/:webhookToken',

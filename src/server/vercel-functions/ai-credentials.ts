@@ -2,12 +2,12 @@ import type { Config } from '@netlify/functions';
 import { randomUUID } from 'node:crypto';
 import { count, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { db } from '../../src/db';
-import { credentials, users } from '../../src/db/schema';
-import { AI_PROVIDER_IDS, type AICredentialSummary, type AIProviderId } from '../../src/types/ai';
-import { getRequestUser } from '../../src/server/auth/request-user';
-import { isSameOriginRequest, jsonResponse, parseJsonBody } from '../../src/server/auth/http';
-import { CredentialEncryptionError, encryptCredential } from '../../src/server/ai/credential-vault';
+import { db } from '../../db';
+import { credentials, users } from '../../db/schema';
+import { AI_PROVIDER_IDS, type AICredentialSummary, type AIProviderId } from '../../types/ai';
+import { getRequestUser } from '../../server/auth/request-user';
+import { isSameOriginRequest, jsonResponse, parseJsonBody } from '../../server/auth/http';
+import { CredentialEncryptionError, encryptCredential } from '../../server/ai/credential-vault';
 
 const MAX_CREDENTIAL_BODY_BYTES = 4 * 1024;
 const MAX_CREDENTIALS_PER_USER = 10;

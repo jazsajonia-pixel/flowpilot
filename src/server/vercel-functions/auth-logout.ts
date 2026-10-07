@@ -1,8 +1,8 @@
 import type { Config } from '@netlify/functions';
-import { isSameOriginRequest, isSecureRequest, jsonResponse, parseJsonBody } from '../../src/server/auth/http';
-import { revokeUserSession } from '../../src/server/auth/session-store';
-import { readSessionToken, serializeClearedSessionCookie } from '../../src/server/auth/session-token';
-import { logoutSchema } from '../../src/server/auth/validation';
+import { isSameOriginRequest, isSecureRequest, jsonResponse, parseJsonBody } from '../../server/auth/http';
+import { revokeUserSession } from '../../server/auth/session-store';
+import { readSessionToken, serializeClearedSessionCookie } from '../../server/auth/session-token';
+import { logoutSchema } from '../../server/auth/validation';
 
 export const config: Config = {
   path: '/api/auth/logout',

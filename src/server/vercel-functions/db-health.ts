@@ -1,6 +1,6 @@
 import { Handler } from '@netlify/functions';
 import { sql } from 'drizzle-orm';
-import { getDb } from '../../src/db/index';
+import { getDb } from '../../db/index';
 
 /**
  * Netlify Function: Server-side Database Health Check Endpoint
