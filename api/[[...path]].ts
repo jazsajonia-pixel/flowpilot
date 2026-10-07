@@ -1,23 +1,37 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Readable } from 'node:stream';
+import { handler as health } from '../netlify/functions/health';
+import { handler as dbHealth } from '../netlify/functions/db-health';
+import authLogin from '../netlify/functions/auth-login';
+import authRegister from '../netlify/functions/auth-register';
+import authLogout from '../netlify/functions/auth-logout';
+import authSession from '../netlify/functions/auth-session';
+import aiCredentials from '../netlify/functions/ai-credentials';
+import aiCredential from '../netlify/functions/ai-credential';
+import workflows from '../netlify/functions/workflows';
+import workflow from '../netlify/functions/workflow';
+import workflowGraph from '../netlify/functions/workflow-graph';
+import workflowExecutions from '../netlify/functions/workflow-executions';
+import webhookTrigger from '../netlify/functions/webhook-trigger';
 
 type WebHandler = (request: Request, context?: { params: Record<string, string> }) => Promise<Response>;
 type LegacyHandler = () => Promise<{ statusCode: number; headers?: Record<string, string>; body?: string }>;
+type RouteModule = { default?: WebHandler; handler?: LegacyHandler };
 
-const routeTable: Array<{ match: RegExp; load: () => Promise<{ default?: WebHandler; handler?: LegacyHandler }>; params?: (match: RegExpMatchArray) => Record<string, string> }> = [
-  { match: /^\/api\/auth\/login\/?$/, load: () => import('../netlify/functions/auth-login') },
-  { match: /^\/api\/auth\/register\/?$/, load: () => import('../netlify/functions/auth-register') },
-  { match: /^\/api\/auth\/logout\/?$/, load: () => import('../netlify/functions/auth-logout') },
-  { match: /^\/api\/auth\/session\/?$/, load: () => import('../netlify/functions/auth-session') },
-  { match: /^\/api\/ai-credentials\/?$/, load: () => import('../netlify/functions/ai-credentials') },
-  { match: /^\/api\/ai-credentials\/([^/]+)\/?$/, load: () => import('../netlify/functions/ai-credential'), params: (match) => ({ credentialId: match[1] }) },
-  { match: /^\/api\/workflows\/?$/, load: () => import('../netlify/functions/workflows') },
-  { match: /^\/api\/workflows\/([^/]+)\/graph\/?$/, load: () => import('../netlify/functions/workflow-graph'), params: (match) => ({ workflowId: match[1] }) },
-  { match: /^\/api\/workflows\/([^/]+)\/executions\/?$/, load: () => import('../netlify/functions/workflow-executions'), params: (match) => ({ workflowId: match[1] }) },
-  { match: /^\/api\/workflows\/([^/]+)\/?$/, load: () => import('../netlify/functions/workflow'), params: (match) => ({ workflowId: match[1] }) },
-  { match: /^\/api\/hooks\/([^/]+)\/?$/, load: () => import('../netlify/functions/webhook-trigger'), params: (match) => ({ webhookToken: match[1] }) },
-  { match: /^\/api\/health\/?$/, load: () => import('../netlify/functions/health') },
-  { match: /^\/api\/db-health\/?$/, load: () => import('../netlify/functions/db-health') },
+const routeTable: Array<{ match: RegExp; module: RouteModule; params?: (match: RegExpMatchArray) => Record<string, string> }> = [
+  { match: /^\/api\/auth\/login\/?$/, module: { default: authLogin } },
+  { match: /^\/api\/auth\/register\/?$/, module: { default: authRegister } },
+  { match: /^\/api\/auth\/logout\/?$/, module: { default: authLogout } },
+  { match: /^\/api\/auth\/session\/?$/, module: { default: authSession } },
+  { match: /^\/api\/ai-credentials\/?$/, module: { default: aiCredentials } },
+  { match: /^\/api\/ai-credentials\/([^/]+)\/?$/, module: { default: aiCredential }, params: (match) => ({ credentialId: match[1] }) },
+  { match: /^\/api\/workflows\/?$/, module: { default: workflows } },
+  { match: /^\/api\/workflows\/([^/]+)\/graph\/?$/, module: { default: workflowGraph }, params: (match) => ({ workflowId: match[1] }) },
+  { match: /^\/api\/workflows\/([^/]+)\/executions\/?$/, module: { default: workflowExecutions }, params: (match) => ({ workflowId: match[1] }) },
+  { match: /^\/api\/workflows\/([^/]+)\/?$/, module: { default: workflow }, params: (match) => ({ workflowId: match[1] }) },
+  { match: /^\/api\/hooks\/([^/]+)\/?$/, module: { default: webhookTrigger }, params: (match) => ({ webhookToken: match[1] }) },
+  { match: /^\/api\/health\/?$/, module: { handler: health } },
+  { match: /^\/api\/db-health\/?$/, module: { handler: dbHealth } },
 ];
 
 function copyHeaders(response: Response, target: VercelResponse) {
@@ -36,21 +50,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const module = await route.load();
-    if (module.handler) {
-      const legacy = await module.handler();
+    if (route.module.handler) {
+      const legacy = await route.module.handler();
       res.status(legacy.statusCode);
       for (const [key, value] of Object.entries(legacy.headers ?? {})) res.setHeader(key, value);
       res.end(legacy.body ?? '');
       return;
     }
 
-    if (!module.default) {
+    if (!route.module.default) {
       res.status(500).json({ error: 'Handler unavailable.' });
       return;
     }
 
-    const body = req.method === 'GET' || req.method === 'HEAD' ? undefined : Readable.toWeb(req as never) as unknown as ReadableStream;
+    const body = req.method === 'GET' || req.method === 'HEAD'
+      ? undefined
+      : Readable.toWeb(req as never) as unknown as ReadableStream;
     const request = new Request(url, {
       method: req.method,
       headers: req.headers as HeadersInit,
@@ -58,7 +73,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       duplex: body ? 'half' : undefined,
     } as RequestInit & { duplex?: 'half' });
     const match = route.match.exec(url.pathname);
-    const response = await module.default(request, { params: match && route.params ? route.params(match) : {} });
+    const response = await route.module.default(request, {
+      params: match && route.params ? route.params(match) : {},
+    });
     copyHeaders(response, res);
     res.status(response.status);
     res.end(Buffer.from(await response.arrayBuffer()));
