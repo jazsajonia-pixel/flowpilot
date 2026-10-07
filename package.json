@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && esbuild vercel/dispatcher.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=server-build/dispatcher.mjs",
     "lint": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
     "preview": "vite preview"
@@ -37,6 +37,7 @@
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.19",
     "drizzle-kit": "^0.31.11",
+    "esbuild": "^0.25.12",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.1",
     "tsx": "^4.23.15",

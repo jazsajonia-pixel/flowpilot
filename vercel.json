@@ -4,7 +4,7 @@
   "framework": "vite",
   "functions": {
     "api/[[...path]].ts": {
-      "includeFiles": "src/server/vercel-functions/**"
+      "includeFiles": "server-build/dispatcher.mjs"
     }
   },
   "rewrites": [
