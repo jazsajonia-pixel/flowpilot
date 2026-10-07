@@ -99,6 +99,10 @@ export function NodeConfigurationEditor({ node, onChange, credentials = [] }: No
     return <p className="rounded-lg border bg-muted/40 p-3 text-xs leading-5 text-muted-foreground">Start this workflow manually. The Run button accepts a JSON input payload for this trigger.</p>;
   }
 
+  if (node.data.category === 'webhook_trigger') {
+    return <div className="space-y-2 rounded-lg border border-sky-200 bg-sky-50 p-3 text-xs leading-5 text-sky-950"><strong>Webhook Trigger</strong><p>External systems start this workflow with a JSON object sent to the owner-only webhook URL. Save the graph, then activate the workflow to accept requests.</p><p className="text-[11px] text-sky-800">The endpoint URL is a bearer secret. Do not publish it in client code, logs, or public documentation.</p></div>;
+  }
+
   if (node.data.category === 'condition') {
     return (
       <div className="space-y-3">

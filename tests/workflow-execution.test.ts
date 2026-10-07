@@ -311,3 +311,19 @@ test('workflow execution resolves BYO provider selections only when the AI node 
   assert.equal(JSON.stringify(result).includes('private AI result'), false);
   assert.equal(JSON.stringify(result).includes('private source'), false);
 });
+
+test('webhook execution requires a Webhook Trigger while manual execution remains isolated', async () => {
+  const webhookGraph: WorkflowGraphInput = {
+    nodes: [node(ids.trigger, 'webhook_trigger')],
+    connections: [],
+  };
+
+  const webhookResult = await executeWorkflowGraph(webhookGraph, { body: { event: 'created' } }, {
+    triggerCategory: 'webhook_trigger',
+  });
+  assert.equal(webhookResult.status, 'completed');
+
+  const manualResult = await executeWorkflowGraph(webhookGraph, {}, { triggerCategory: 'manual_trigger' });
+  assert.equal(manualResult.status, 'failed');
+  assert.match(manualResult.error ?? '', /Manual Trigger/);
+});

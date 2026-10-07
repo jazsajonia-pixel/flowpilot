@@ -1,8 +1,10 @@
 import type { Config, Context } from '@netlify/functions';
+import { eq } from 'drizzle-orm';
 import { db } from '../../src/db';
-import { workflows } from '../../src/db/schema';
+import { connections, workflowNodes, workflows } from '../../src/db/schema';
 import { isSameOriginRequest, jsonResponse, parseJsonBody } from '../../src/server/auth/http';
 import { getRequestUser } from '../../src/server/auth/request-user';
+import { workflowGraphSchema } from '../../src/server/workflows/graph-validation';
 import { workflowOwnerScope } from '../../src/server/workflows/ownership';
 import { updateWorkflowSchema, workflowIdSchema } from '../../src/server/workflows/validation';
 
@@ -16,6 +18,7 @@ const workflowFields = {
   title: workflows.title,
   description: workflows.description,
   isActive: workflows.isActive,
+  webhookToken: workflows.webhookToken,
   createdAt: workflows.createdAt,
   updatedAt: workflows.updatedAt,
 };
@@ -59,6 +62,39 @@ export default async function workflowItem(request: Request, context: Context): 
           error: 'Invalid workflow update.',
           fields: parsed.error.flatten().fieldErrors,
         });
+      }
+
+      if (parsed.data.isActive === true) {
+        const [nodes, savedConnections] = await Promise.all([
+          db
+            .select({
+              id: workflowNodes.id,
+              type: workflowNodes.type,
+              category: workflowNodes.category,
+              label: workflowNodes.label,
+              position: workflowNodes.position,
+              config: workflowNodes.config,
+            })
+            .from(workflowNodes)
+            .where(eq(workflowNodes.workflowId, workflowId)),
+          db
+            .select({
+              id: connections.id,
+              sourceNodeId: connections.sourceNodeId,
+              sourceHandle: connections.sourceHandle,
+              targetNodeId: connections.targetNodeId,
+              targetHandle: connections.targetHandle,
+            })
+            .from(connections)
+            .where(eq(connections.workflowId, workflowId)),
+        ]);
+        const graphResult = workflowGraphSchema.safeParse({ nodes, connections: savedConnections });
+        const triggerNodes = graphResult.success
+          ? graphResult.data.nodes.filter((node) => node.type === 'trigger')
+          : [];
+        if (!graphResult.success || triggerNodes.length !== 1 || triggerNodes[0].category !== 'webhook_trigger') {
+          return jsonResponse(422, { error: 'Activate requires a valid workflow with one Webhook Trigger.' });
+        }
       }
 
       const [workflow] = await db

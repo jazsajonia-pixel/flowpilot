@@ -5,6 +5,7 @@ import { workflows } from '../../src/db/schema';
 import { isSameOriginRequest, jsonResponse, parseJsonBody } from '../../src/server/auth/http';
 import { getRequestUser } from '../../src/server/auth/request-user';
 import { createWorkflowSchema } from '../../src/server/workflows/validation';
+import { createWebhookToken } from '../../src/server/workflows/webhook-token';
 
 export const config: Config = {
   path: '/api/workflows',
@@ -16,6 +17,7 @@ const workflowFields = {
   title: workflows.title,
   description: workflows.description,
   isActive: workflows.isActive,
+  webhookToken: workflows.webhookToken,
   createdAt: workflows.createdAt,
   updatedAt: workflows.updatedAt,
 };
@@ -58,6 +60,7 @@ export default async function workflowCollection(request: Request): Promise<Resp
         ownerId: user.id,
         title: parsed.data.title,
         description: parsed.data.description ?? null,
+        webhookToken: createWebhookToken(),
       })
       .returning(workflowFields);
 

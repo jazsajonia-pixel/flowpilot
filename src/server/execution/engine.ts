@@ -33,6 +33,7 @@ export interface WorkflowExecutionResult {
 }
 
 export interface WorkflowExecutionOptions {
+  triggerCategory?: 'manual_trigger' | 'webhook_trigger';
   timeoutMs?: number;
   request?: typeof sendPublicHttpsRequest;
   aiProvider?: AIProvider;
@@ -319,7 +320,7 @@ async function runNode(
   executionOptions: WorkflowExecutionOptions,
   remainingMs: number,
 ): Promise<unknown> {
-  if (node.category === 'manual_trigger') return { received: true };
+  if (node.category === 'manual_trigger' || node.category === 'webhook_trigger') return { received: true };
   if (node.category === 'condition') return applyCondition(node, context);
   if (node.category === 'filter') return applyFilter(node, context);
   if (node.category === 'gemini_ai' || node.category.startsWith('ai_')) {
@@ -356,12 +357,13 @@ export async function executeWorkflowGraph(
   const deadline = startTime + Math.min(options.timeoutMs ?? DEFAULT_EXECUTION_BUDGET_MS, DEFAULT_EXECUTION_BUDGET_MS);
   const logs: SafeExecutionLog[] = [];
   const triggerNodes = graph.nodes.filter((node) => node.category.endsWith('_trigger'));
+  const requiredTriggerCategory = options.triggerCategory ?? 'manual_trigger';
 
   if (graph.nodes.length === 0 || graph.nodes.length > MAX_GRAPH_NODES) {
     return { status: 'failed', logs, error: 'Workflow must contain between 1 and 50 nodes.' };
   }
-  if (triggerNodes.length !== 1 || triggerNodes[0].category !== 'manual_trigger') {
-    return { status: 'failed', logs, error: 'A single Manual Trigger is required to run this workflow in Phase 4.' };
+  if (triggerNodes.length !== 1 || triggerNodes[0].category !== requiredTriggerCategory) {
+    return { status: 'failed', logs, error: `A single ${requiredTriggerCategory === 'webhook_trigger' ? 'Webhook' : 'Manual'} Trigger is required to run this workflow.` };
   }
 
   let orderedNodes: WorkflowNode[];

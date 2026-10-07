@@ -14,9 +14,10 @@ export const updateWorkflowSchema = z
   .object({
     title: titleSchema.optional(),
     description: descriptionSchema.optional(),
+    isActive: z.boolean().optional(),
   })
   .strict()
-  .refine((value) => value.title !== undefined || value.description !== undefined, {
+  .refine((value) => value.title !== undefined || value.description !== undefined || value.isActive !== undefined, {
     message: 'At least one editable workflow field is required.',
   });
 

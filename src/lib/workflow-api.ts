@@ -5,6 +5,7 @@ export interface WorkflowSummary {
   title: string;
   description: string | null;
   isActive: boolean;
+  webhookToken: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -88,10 +89,14 @@ export async function getWorkflow(workflowId: string): Promise<WorkflowSummary> 
 }
 
 export async function updateWorkflowTitle(workflowId: string, title: string): Promise<WorkflowSummary> {
+  return updateWorkflow(workflowId, { title });
+}
+
+export async function updateWorkflow(workflowId: string, update: { title?: string; description?: string | null; isActive?: boolean }): Promise<WorkflowSummary> {
   const result = await request<{ workflow: WorkflowSummary }>(`/api/workflows/${encodeURIComponent(workflowId)}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title }),
+    body: JSON.stringify(update),
   });
   return result.workflow;
 }

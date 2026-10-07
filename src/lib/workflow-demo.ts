@@ -5,6 +5,7 @@ export const demoWorkflow = {
   title: 'Customer feedback triage',
   description: 'Classify incoming feedback and route a summary.',
   isActive: false,
+  webhookToken: 'demo-webhook-token',
   createdAt: '2026-10-01T09:00:00.000Z',
   updatedAt: '2026-10-04T09:00:00.000Z',
 };

@@ -30,9 +30,10 @@ test('workflow create accepts only editable fields and normalizes whitespace', (
 test('workflow update requires at least one supported field and rejects ownership changes', () => {
   assert.equal(updateWorkflowSchema.safeParse({ title: 'Updated title' }).success, true);
   assert.equal(updateWorkflowSchema.safeParse({ description: null }).success, true);
+  assert.equal(updateWorkflowSchema.safeParse({ isActive: true }).success, true);
   assert.equal(updateWorkflowSchema.safeParse({}).success, false);
   assert.equal(updateWorkflowSchema.safeParse({ ownerId }).success, false);
-  assert.equal(updateWorkflowSchema.safeParse({ isActive: true }).success, false);
+  assert.equal(updateWorkflowSchema.safeParse({ webhookToken: 'forged-token' }).success, false);
   assert.equal(updateWorkflowSchema.safeParse({ title: 'x'.repeat(201) }).success, false);
 });
 

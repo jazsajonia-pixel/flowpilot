@@ -74,10 +74,14 @@ export const workflows = pgTable(
     title: varchar('title', { length: 200 }).notNull(),
     description: text('description'),
     isActive: boolean('is_active').default(false).notNull(),
+    webhookToken: varchar('webhook_token', { length: 64 }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },
-  (table) => [index('workflows_owner_id_idx').on(table.ownerId)],
+  (table) => [
+    index('workflows_owner_id_idx').on(table.ownerId),
+    uniqueIndex('workflows_webhook_token_unique').on(table.webhookToken),
+  ],
 );
 
 export const workflowNodes = pgTable(

@@ -37,7 +37,7 @@ Credential list/create/delete responses never include plaintext keys or encrypte
 
 ## Deliberate boundaries
 
-The execution route runs synchronously; no queue, status polling/history browser, retries, idempotency keys, rate limiting, background worker, scheduler, webhook receiver, error branches, or workflow activation API exists yet. Workflow `isActive` is not an execution authorization or scheduling control. Custom provider implementations can be added behind the server-side interface, but arbitrary user-configured base URLs remain out of scope until credentialed egress receives separate SSRF and secret-exfiltration review. Never put API keys, passwords, or tokens in workflow configuration.
+The execution routes run synchronously; no queue, status polling/history browser, retries, idempotency keys, rate limiting, background worker, scheduler, or error branches exist yet. The webhook receiver and activation API are now implemented, but rate limiting, replay protection, and production abuse controls remain out of scope. Workflow `isActive` gates webhook execution only; it does not authorize manual execution. Custom provider implementations can be added behind the server-side interface, but arbitrary user-configured base URLs remain out of scope until credentialed egress receives separate SSRF and secret-exfiltration review. Never put API keys, passwords, or tokens in workflow configuration.
 
 Public outbound HTTPS and AI usage remain potential abuse/cost capabilities. Provider usage is billed to the built-in environment or the user's own vendor account according to the selected key. Production use needs rate limits, provider quota controls, abuse monitoring, and deployment-level egress review.
 
@@ -55,3 +55,11 @@ npm test
 npm run build
 npx drizzle-kit check
 ```
+
+## Phase 7 webhook trigger
+
+Workflows have a server-generated `webhookToken` and owner-controlled `isActive` state. The token is returned only in metadata responses for the authenticated owner; clients cannot provide or change it. Activating a workflow validates the persisted graph and requires exactly one Webhook Trigger.
+
+`POST /api/hooks/:webhookToken` is a public bearer-token endpoint and does not use a session cookie. It accepts one JSON object body up to 16 KiB, executes only an active workflow whose graph contains exactly one Webhook Trigger, and returns the same safe synchronous execution summary shape used by manual runs. Unknown, malformed, inactive, and wrong-trigger tokens intentionally return the same generic `404 Workflow not found.` response. Invalid bodies do not create executions.
+
+Webhook tokens and raw webhook payloads are never written to execution records, execution logs, generic errors, or server logs. The route revalidates the graph and preserves the existing 50-node, 25-step, eight-second execution bounds. Rate limiting, quotas, abuse monitoring, replay protection, and production egress review remain required before live deployment.

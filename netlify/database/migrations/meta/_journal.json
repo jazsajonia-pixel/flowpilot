@@ -15,6 +15,13 @@
       "when": 1791120078949,
       "tag": "0001_phase_2c_auth_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791363432653,
+      "tag": "0002_bitter_black_crow",
+      "breakpoints": true
     }
   ]
 }

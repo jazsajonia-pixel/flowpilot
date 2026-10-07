@@ -15,8 +15,10 @@ FlowPilot AI is a modern, web-based visual automation platform that enables user
 - **Phase 2C — Authentication & Sessions:** COMPLETE
 - **Phase 2D — Protected API & Ownership Verification:** COMPLETE
 - **Phase 3 — Visual Workflow Builder:** COMPLETE
-- **Phase 4 — Workflow Execution Engine:** IN REVIEW
-- **Phase 5 — Gemini AI Integration:** Next after Phase 4 merges
+- **Phase 4 — Workflow Execution Engine:** COMPLETE
+- **Phase 5 — Gemini AI Integration:** COMPLETE
+- **Phase 6 — Bring Your Own AI:** COMPLETE
+- **Phase 7 — Webhook Trigger slice:** COMPLETE; Schedule/Cron, Email, and Database actions remain in progress
 
 ---
 

@@ -29,6 +29,14 @@ test('workflow graph accepts a valid acyclic trigger-to-action path', () => {
   assert.equal(workflowGraphSchema.safeParse(graph).success, true);
 });
 
+test('server graph schema accepts a Webhook Trigger with empty configuration', () => {
+  const result = workflowGraphSchema.safeParse({
+    nodes: [{ id: triggerId, type: 'trigger', category: 'webhook_trigger', label: 'Webhook', position: { x: 0, y: 0 }, config: {} }],
+    connections: [],
+  });
+  assert.equal(result.success, true);
+});
+
 test('connection validation rejects self-links, missing endpoints, duplicate links, trigger targets, and cycles', () => {
   assert.equal(isWorkflowConnectionAllowed(triggerId, aiId, nodes, []), true);
   assert.equal(isWorkflowConnectionAllowed(triggerId, aiId, nodes, [], 'true', 'in'), false);

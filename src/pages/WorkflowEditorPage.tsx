@@ -9,7 +9,7 @@ import {
   type EdgeChange,
   type NodeChange,
 } from '@xyflow/react';
-import { ArrowLeft, Check, CircleAlert, LoaderCircle, Play, Save } from 'lucide-react';
+import { ArrowLeft, Check, CircleAlert, Copy, LoaderCircle, Play, Power, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,7 @@ import { WorkflowCanvas } from '@/components/workflow/WorkflowCanvas';
 import type { FlowEdge, FlowNode } from '@/components/workflow/flow-types';
 import { toFlowEdge, toFlowNode, toWorkflowConnection, toWorkflowNode } from '@/components/workflow/graph-mapping';
 import { listAICredentials } from '@/lib/ai-api';
-import { getWorkflow, getWorkflowGraph, runWorkflow, saveWorkflowGraph, updateWorkflowTitle, WorkflowApiError, type WorkflowExecutionSummary, type WorkflowGraph, type WorkflowSummary } from '@/lib/workflow-api';
+import { getWorkflow, getWorkflowGraph, runWorkflow, saveWorkflowGraph, updateWorkflow, updateWorkflowTitle, WorkflowApiError, type WorkflowExecutionSummary, type WorkflowGraph, type WorkflowSummary } from '@/lib/workflow-api';
 import { demoWorkflow, demoWorkflowGraph } from '@/lib/workflow-demo';
 import { isWorkflowConnectionAllowed } from '@/lib/workflow-graph';
 import type { AICredentialSummary } from '@/types/ai';
@@ -57,6 +57,9 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
   const [isRunning, setIsRunning] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
   const [latestRun, setLatestRun] = useState<WorkflowExecutionSummary | null>(null);
+  const [isActivationSaving, setIsActivationSaving] = useState(false);
+  const [activationError, setActivationError] = useState<string | null>(null);
+  const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle');
   const [revision, setRevision] = useState(0);
   const revisionRef = useRef(0);
   const savedRevisionRef = useRef(0);
@@ -252,6 +255,31 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
     }
   }
 
+  async function toggleActivation() {
+    if (demo || !workflowId || !workflow || !hasWebhookTrigger || hasUnsavedGraph || isActivationSaving) return;
+    setIsActivationSaving(true);
+    setActivationError(null);
+    try {
+      const updated = await updateWorkflow(workflowId, { isActive: !workflow.isActive });
+      setWorkflow(updated);
+    } catch (reason) {
+      setActivationError(errorMessage(reason));
+    } finally {
+      setIsActivationSaving(false);
+    }
+  }
+
+  async function copyWebhookUrl() {
+    if (!webhookUrl) return;
+    try {
+      await navigator.clipboard.writeText(webhookUrl);
+      setCopyState('copied');
+      window.setTimeout(() => setCopyState('idle'), 1800);
+    } catch {
+      setActivationError('The webhook URL could not be copied.');
+    }
+  }
+
   async function handleBack() {
     if (!demo && revisionRef.current > savedRevisionRef.current) {
       try {
@@ -360,6 +388,8 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
 
   const hasUnsavedGraph = revision > savedRevisionRef.current;
   const hasManualTrigger = nodes.some((node) => node.data.category === 'manual_trigger');
+  const hasWebhookTrigger = nodes.some((node) => node.data.category === 'webhook_trigger');
+  const webhookUrl = workflow?.webhookToken ? `${window.location.origin}/api/hooks/${workflow.webhookToken}` : null;
   const saveLabel = demo
     ? 'Preview only'
     : saveState === 'saving'
@@ -452,6 +482,20 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
             {isRunning ? 'Running…' : 'Run'}
           </Button>
         )}
+        {!demo && hasWebhookTrigger && (
+          <Button
+            type="button"
+            size="sm"
+            variant={workflow.isActive ? 'default' : 'outline'}
+            className="hidden shrink-0 gap-2 sm:inline-flex"
+            disabled={hasUnsavedGraph || isActivationSaving}
+            title={hasUnsavedGraph ? 'Save graph changes before activating.' : 'Activate this webhook workflow.'}
+            onClick={() => void toggleActivation()}
+          >
+            <Power className="h-3.5 w-3.5" />
+            {isActivationSaving ? 'Updating…' : workflow.isActive ? 'Active' : 'Activate'}
+          </Button>
+        )}
       </header>
 
       {demo && (
@@ -465,6 +509,24 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
           <Button size="sm" variant="outline" onClick={() => void saveGraphNow().catch(() => undefined)}>Retry save</Button>
         </div>
       )}
+      {!demo && hasWebhookTrigger && webhookUrl && (
+        <section className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b bg-sky-50 px-4 py-2 text-xs text-sky-950">
+          <div className="min-w-0">
+            <strong>Webhook endpoint</strong>
+            <p className="truncate font-mono text-[10px]" title={webhookUrl}>{webhookUrl}</p>
+            <p className="text-[10px] text-sky-800">Treat this URL as a secret. Activate only after saving the graph.</p>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <Button type="button" size="sm" variant="outline" onClick={() => void copyWebhookUrl()} className="gap-2">
+              <Copy className="h-3.5 w-3.5" /> {copyState === 'copied' ? 'Copied' : 'Copy URL'}
+            </Button>
+            <Button type="button" size="sm" variant={workflow.isActive ? 'default' : 'outline'} disabled={hasUnsavedGraph || isActivationSaving} onClick={() => void toggleActivation()}>
+              <Power className="mr-1.5 h-3.5 w-3.5" /> {workflow.isActive ? 'Active' : 'Activate'}
+            </Button>
+          </div>
+        </section>
+      )}
+      {activationError && !demo && <p className="shrink-0 border-b border-destructive/20 bg-destructive/5 px-4 py-2 text-xs text-destructive" role="alert">{activationError}</p>}
       {latestRun && !demo && (
         <section className={`max-h-40 shrink-0 overflow-y-auto border-b px-4 py-2 text-xs ${latestRun.status === 'completed' ? 'bg-emerald-50 text-emerald-950' : 'bg-rose-50 text-rose-950'}`} aria-live="polite">
           <div className="flex flex-wrap items-center justify-between gap-2">
