@@ -25,17 +25,17 @@
   - Verify: `npm test -- --test-name-pattern='workflows-api|ownership'`; tests prove invalid activation does not partially update `isActive`, token fields are rejected, and foreign users cannot read or mutate the workflow.
   - Files: `src/server/workflows/validation.ts`, `netlify/functions/workflow.ts`, `netlify/functions/workflows.ts`, `src/lib/workflow-api.ts`, `tests/workflows-api.test.ts`.
 
-- [ ] **T6 — Add the public webhook execution handler**
+- [x] **T6 — Add the public webhook execution handler**
   - Acceptance: `POST /api/hooks/:webhookToken` accepts no session, enforces a 16 KiB JSON-object body, normalizes unknown/malformed/inactive/wrong-trigger tokens to generic 404, executes only active valid webhook graphs, persists safe execution state/logs, and returns a safe summary.
   - Verify: Focused handler tests cover valid completion, invalid token classes, malformed/oversized/non-object body, invalid graph, persistence failure, unsupported methods, and no raw token/payload leakage.
   - Files: `netlify/functions/webhook-trigger.ts`, `src/server/execution/logging.ts` (only if needed), `tests/webhook-trigger.test.ts`, `tests/http.test.ts` (only if shared parser behavior changes).
 
-- [ ] **T7 — Add webhook security and privacy regression coverage**
+- [x] **T7 — Add webhook security and privacy regression coverage**
   - Acceptance: Tests prove tokens never appear in logs/errors/public invalid-token responses, raw webhook bodies are not persisted, execution limits remain active, and manual execution behavior is unchanged.
   - Verify: `npm test`; inspect test fixtures for secrets and raw sensitive payload assertions.
   - Files: `tests/webhook-trigger.test.ts`, `tests/workflow-execution.test.ts`, `tests/response-schema.test.ts` (as needed).
 
-  - Status note: pure token/body contracts and engine isolation are covered; full database-backed handler orchestration/privacy tests remain pending until the handler has an injectable database boundary or a configured test database.
+  - Status note: handler orchestration now runs through an injectable store boundary, so persistence failures and privacy behavior are covered without a configured live Netlify DB.
 
 - [x] **T8 — Integrate editor controls and update documentation**
   - Acceptance: The editor displays/copies the endpoint only for webhook graphs, communicates activation and bearer-secret behavior, blocks activation with unsaved changes, and documentation matches the implemented public API/security contract.
