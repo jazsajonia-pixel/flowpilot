@@ -1,13 +1,19 @@
-import { drizzle } from 'drizzle-orm/netlify-db';
+import { neon } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from './schema';
 
 /**
- * Server-Side Drizzle Database Client
- *
- * Interacts with Netlify Database (PostgreSQL) using Netlify's native Drizzle adapter.
- * MUST remain server-side only (Netlify Functions). Never import into React UI code.
+ * Server-side Drizzle client for Vercel serverless functions backed by Neon.
+ * This module must remain server-side only.
  */
-export const db = drizzle({ schema });
+const databaseUrl = process.env.DATABASE_URL;
+
+if (!databaseUrl && process.env.NODE_ENV === 'production') {
+  throw new Error('DATABASE_URL is required in production.');
+}
+
+const sql = neon(databaseUrl ?? 'postgresql://localhost/flowpilot');
+export const db = drizzle(sql, { schema });
 
 export function getDb() {
   return db;

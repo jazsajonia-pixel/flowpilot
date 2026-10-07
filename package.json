@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@google/genai": "^2.27.0",
+    "@neondatabase/serverless": "^1.2.0",
     "@netlify/database": "^2.0.1",
     "@netlify/db": "^0.4.0",
     "@tanstack/react-query": "^5.28.9",
