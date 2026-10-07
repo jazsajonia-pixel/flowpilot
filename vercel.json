@@ -4,7 +4,7 @@
   "framework": "vite",
   "functions": {
     "api/[[...path]].ts": {
-      "includeFiles": "netlify/functions/**"
+      "includeFiles": "src/server/vercel-functions/**"
     }
   },
   "rewrites": [
