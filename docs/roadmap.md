@@ -69,7 +69,7 @@ This document outlines the sequential phases for building FlowPilot AI.
 
 ### Phase 7: Automation Integrations & Triggers (IN PROGRESS)
 - Implement Webhook Trigger endpoint receiver with dynamic path routing. *(Initial bounded slice complete.)*
-- Implement Schedule / Cron Trigger system.
+- Implement Schedule / Cron Trigger system. *(Hobby-compatible daily/weekly UTC slice complete; see `docs/schedule-trigger.md`.)*
 - Build Email notification action nodes and database CRUD action nodes.
 
 ### Phase 8: Execution Monitoring, Logs & Reliability
@@ -79,8 +79,8 @@ This document outlines the sequential phases for building FlowPilot AI.
 ### Phase 9: Security, Testing & Production Hardening
 - Audit and verify the Phase 6 key-encryption design; add rate limiting and production security review.
 - Write unit tests for workflow engine execution and Zod validation schemas.
-- Set up automated CI/CD checks for GitHub Actions and Netlify deployment.
+- Set up automated CI/CD checks for GitHub Actions and Vercel deployment.
 
 ### Phase 10: Final UI/UX & Portfolio Polish
 - Refine dashboard analytics, template gallery, and visual aesthetics.
-- Final documentation polish, demo setup, and production deployment on Netlify.
+- Final documentation polish, demo setup, and production deployment on Vercel + Neon.

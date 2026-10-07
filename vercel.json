@@ -4,9 +4,13 @@
   "framework": "vite",
   "functions": {
     "api/[[...path]].ts": {
-      "includeFiles": "server-build/dispatcher.mjs"
+      "includeFiles": "server-build/dispatcher.mjs",
+      "maxDuration": 60
     }
   },
+  "crons": [
+    { "path": "/api/internal/schedule-tick", "schedule": "0 0 * * *" }
+  ],
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]

@@ -15,6 +15,8 @@ const DEFAULT_EXECUTION_BUDGET_MS = 8_000;
 const MAX_AI_REQUEST_MS = 6_000;
 const MAX_AI_INPUT_CHARACTERS = 16_384;
 
+const TRIGGER_LABELS = { manual_trigger: 'Manual', webhook_trigger: 'Webhook', schedule_trigger: 'Schedule' } as const;
+
 const comparisonOperators = new Set([
   'equals',
   'not_equals',
@@ -33,7 +35,7 @@ export interface WorkflowExecutionResult {
 }
 
 export interface WorkflowExecutionOptions {
-  triggerCategory?: 'manual_trigger' | 'webhook_trigger';
+  triggerCategory?: 'manual_trigger' | 'webhook_trigger' | 'schedule_trigger';
   timeoutMs?: number;
   request?: typeof sendPublicHttpsRequest;
   aiProvider?: AIProvider;
@@ -320,7 +322,9 @@ async function runNode(
   executionOptions: WorkflowExecutionOptions,
   remainingMs: number,
 ): Promise<unknown> {
-  if (node.category === 'manual_trigger' || node.category === 'webhook_trigger') return { received: true };
+  if (node.category === 'manual_trigger' || node.category === 'webhook_trigger' || node.category === 'schedule_trigger') {
+    return { received: true };
+  }
   if (node.category === 'condition') return applyCondition(node, context);
   if (node.category === 'filter') return applyFilter(node, context);
   if (node.category === 'gemini_ai' || node.category.startsWith('ai_')) {
@@ -363,7 +367,7 @@ export async function executeWorkflowGraph(
     return { status: 'failed', logs, error: 'Workflow must contain between 1 and 50 nodes.' };
   }
   if (triggerNodes.length !== 1 || triggerNodes[0].category !== requiredTriggerCategory) {
-    return { status: 'failed', logs, error: `A single ${requiredTriggerCategory === 'webhook_trigger' ? 'Webhook' : 'Manual'} Trigger is required to run this workflow.` };
+    return { status: 'failed', logs, error: `A single ${TRIGGER_LABELS[requiredTriggerCategory]} Trigger is required to run this workflow.` };
   }
 
   let orderedNodes: WorkflowNode[];

@@ -33,7 +33,7 @@ export interface WorkflowNodeDefinition {
 export const NODE_CATALOG: readonly WorkflowNodeDefinition[] = [
   { type: 'trigger', category: 'manual_trigger', label: 'Manual Trigger', description: 'Start a workflow manually.' },
   { type: 'trigger', category: 'webhook_trigger', label: 'Webhook Trigger', description: 'Start when an external event calls a webhook.' },
-  { type: 'trigger', category: 'schedule_trigger', label: 'Schedule Trigger', description: 'Start on a schedule.' },
+  { type: 'trigger', category: 'schedule_trigger', label: 'Schedule Trigger', description: 'Start once a day or on selected UTC weekdays.' },
   { type: 'ai', category: 'gemini_ai', label: 'AI Text Generation', description: 'Generate text or JSON with a selected Gemini or OpenAI model.' },
   { type: 'ai', category: 'ai_classification', label: 'AI Classification', description: 'Classify text into categories.' },
   { type: 'ai', category: 'ai_extraction', label: 'AI Extraction', description: 'Extract structured details from text.' },

@@ -106,12 +106,13 @@ export async function getWorkflowGraph(workflowId: string): Promise<WorkflowGrap
   return result.graph;
 }
 
-export async function saveWorkflowGraph(workflowId: string, graph: WorkflowGraph): Promise<void> {
-  await request<{ ok: true }>(`/api/workflows/${encodeURIComponent(workflowId)}/graph`, {
+export async function saveWorkflowGraph(workflowId: string, graph: WorkflowGraph): Promise<{ deactivated: boolean }> {
+  const result = await request<{ ok: true; deactivated?: boolean }>(`/api/workflows/${encodeURIComponent(workflowId)}/graph`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(graph),
   });
+  return { deactivated: result.deactivated === true };
 }
 
 export async function runWorkflow(workflowId: string, input: Record<string, unknown>): Promise<WorkflowExecutionSummary> {

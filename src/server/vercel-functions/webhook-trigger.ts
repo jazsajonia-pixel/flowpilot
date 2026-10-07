@@ -1,12 +1,12 @@
 import type { Config, Context } from '@netlify/functions';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../../db';
-import { connections, credentials, executions, executionLogs, workflowNodes, workflows } from '../../db/schema';
+import { connections, executions, executionLogs, workflowNodes, workflows } from '../../db/schema';
+import { findOwnedAICredential } from '../../server/ai/owned-credential-lookup';
 import { createOwnerAIProviderResolver } from '../../server/ai/provider-resolver';
 import { executeWorkflowGraph } from '../../server/execution/engine';
 import { handleWebhookRequest } from '../../server/workflows/webhook-trigger-core';
 import type { WorkflowGraphInput } from '../../server/workflows/graph-validation';
-import { isAIProviderId } from '../../types/ai';
 
 export const config: Config = {
   path: '/api/hooks/:webhookToken',
@@ -98,24 +98,6 @@ async function executeWorkflowGraphWithOwner(
   input: Record<string, unknown>,
   ownerId: string,
 ) {
-  const resolveAIProvider = createOwnerAIProviderResolver(ownerId, async (credentialOwnerId, credentialId, provider) => {
-    const [credential] = await db
-      .select({
-        id: credentials.id,
-        ownerId: credentials.ownerId,
-        provider: credentials.provider,
-        encryptedPayload: credentials.encryptedPayload,
-      })
-      .from(credentials)
-      .where(and(
-        eq(credentials.id, credentialId),
-        eq(credentials.ownerId, credentialOwnerId),
-        eq(credentials.provider, provider),
-      ))
-      .limit(1);
-    if (!credential || !isAIProviderId(credential.provider)) return null;
-    return { ...credential, provider: credential.provider };
-  });
-
+  const resolveAIProvider = createOwnerAIProviderResolver(ownerId, findOwnedAICredential);
   return executeWorkflowGraph(graph, input, { triggerCategory: 'webhook_trigger', resolveAIProvider });
 }

@@ -3,6 +3,7 @@ import { validateWorkflowConnections } from '../../lib/workflow-graph';
 import { NODE_CATALOG, NODE_TYPE_BY_CATEGORY, type NodeCategory } from '../../types/workflow';
 import { isAIModelForProvider } from '../../types/ai';
 import { isOpenAIStrictJsonSchema, parseResponseJsonSchema } from '../ai/json-schema';
+import { scheduleTriggerDraftConfigSchema } from './schedule-config';
 import { workflowIdSchema } from './validation';
 
 const nodeTypes = ['trigger', 'ai', 'logic', 'action'] as const;
@@ -138,7 +139,7 @@ const aiGenerationConfigSchema = aiCommonConfigSchema.extend(aiProviderConfigFie
 const configSchemaByCategory: Record<NodeCategory, z.ZodTypeAny> = {
   manual_trigger: emptyConfigSchema,
   webhook_trigger: emptyConfigSchema,
-  schedule_trigger: emptyConfigSchema,
+  schedule_trigger: scheduleTriggerDraftConfigSchema,
   gemini_ai: geminiAIConfigSchema,
   ai_classification: aiClassificationConfigSchema,
   ai_extraction: aiExtractionConfigSchema,

@@ -1,10 +1,10 @@
 import type { Config, Context } from '@netlify/functions';
-import { eq } from 'drizzle-orm';
+import { and, eq, ne, sql } from 'drizzle-orm';
 import { db } from '../../db';
 import { connections, workflowNodes, workflows } from '../../db/schema';
 import { isSameOriginRequest, jsonResponse, parseJsonBody } from '../../server/auth/http';
 import { getRequestUser } from '../../server/auth/request-user';
-import { workflowGraphSchema } from '../../server/workflows/graph-validation';
+import { checkWorkflowActivation } from '../../server/workflows/activation';
 import { workflowOwnerScope } from '../../server/workflows/ownership';
 import { updateWorkflowSchema, workflowIdSchema } from '../../server/workflows/validation';
 
@@ -88,13 +88,21 @@ export default async function workflowItem(request: Request, context: Context): 
             .from(connections)
             .where(eq(connections.workflowId, workflowId)),
         ]);
-        const graphResult = workflowGraphSchema.safeParse({ nodes, connections: savedConnections });
-        const triggerNodes = graphResult.success
-          ? graphResult.data.nodes.filter((node) => node.type === 'trigger')
-          : [];
-        if (!graphResult.success || triggerNodes.length !== 1 || triggerNodes[0].category !== 'webhook_trigger') {
-          return jsonResponse(422, { error: 'Activate requires a valid workflow with one Webhook Trigger.' });
-        }
+        const activation = await checkWorkflowActivation(
+          { nodes, connections: savedConnections },
+          async () => {
+            const [row] = await db
+              .select({ count: sql<number>`count(*)::int` })
+              .from(workflows)
+              .where(and(
+                eq(workflows.isActive, true),
+                ne(workflows.id, workflowId),
+                sql`exists (select 1 from ${workflowNodes} where ${workflowNodes.workflowId} = ${workflows.id} and ${workflowNodes.category} = 'schedule_trigger')`,
+              ));
+            return row?.count ?? 0;
+          },
+        );
+        if (!activation.ok) return jsonResponse(activation.status, { error: activation.error });
       }
 
       const [workflow] = await db
