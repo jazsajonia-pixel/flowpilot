@@ -62,6 +62,14 @@ const webhookActionConfigSchema = z
   })
   .strict();
 
+// Recipient is always the workflow owner's account email; no address field is accepted.
+const sendEmailConfigSchema = z
+  .object({
+    subject: z.string().max(512).optional(),
+    body: z.string().max(16_384).optional(),
+  })
+  .strict();
+
 const aiCommonConfigSchema = z.object({
   prompt: z.string().max(16_384).optional(),
   systemInstruction: z.string().max(4_096).optional(),
@@ -149,7 +157,7 @@ const configSchemaByCategory: Record<NodeCategory, z.ZodTypeAny> = {
   switch: emptyConfigSchema,
   filter: filterConfigSchema,
   delay: emptyConfigSchema,
-  send_email: emptyConfigSchema,
+  send_email: sendEmailConfigSchema,
   http_request: httpRequestConfigSchema,
   create_db_record: emptyConfigSchema,
   update_db_record: emptyConfigSchema,

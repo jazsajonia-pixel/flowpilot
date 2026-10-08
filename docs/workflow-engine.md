@@ -24,6 +24,7 @@ The runner processes each graph node at most once. Nodes with no active incoming
 | AI Generation | Produces text from a prompt and optional system instruction. |
 | HTTP Request | GET, POST, PUT, PATCH, or DELETE over restricted outbound HTTPS. GET/DELETE have no request body; other methods may send a JSON body. |
 | Webhook Action | Sends an outgoing HTTPS POST with an optional JSON body. |
+| Send Email | Sends a plain-text email to the workflow owner's account email only, with templated `subject` and `body`. See "Email notifications" below. |
 
 AI nodes share the `AIProvider` interface. Gemini can use the built-in server-managed `GEMINI_API_KEY` or a user-owned Gemini credential. OpenAI requires a user-owned OpenAI credential. Credential IDs and curated model IDs are stored with the workflow; plaintext keys are not. The engine resolves each key only after matching credential ID, provider, and owner ID to the signed-in session, then decrypts it in the server function. OpenAI calls use the official Responses API; OpenAI JSON Schema mode requires an object root, every object property in `required`, and `additionalProperties: false` on every object. Arbitrary endpoint URLs are not accepted. Custom adapters remain a code-level extension point, not user-configurable remote URLs.
 
@@ -56,3 +57,13 @@ AI results remain in the in-memory execution context for downstream nodes; the m
 ## Reliability and production boundary
 
 Manual, webhook, and scheduled executions are synchronous and bounded rather than queued. Webhook runs require an active workflow with exactly one Webhook Trigger and a valid public bearer token; scheduled runs require an active workflow with exactly one complete Schedule Trigger and are started only by the authenticated daily Cron tick (see [`schedule-trigger.md`](schedule-trigger.md)); manual runs remain restricted to Manual Trigger graphs. Their graph budget leaves time for response/database work within an ordinary serverless invocation; long-running workflows need a durable queue/background design in a later phase. External public-endpoint actions, the public webhook route, and user-owned model usage remain potential abuse/cost surfaces. Rate limits, per-user quotas, abuse monitoring, execution history UI, retry support, idempotency for non-scheduled runs, and deployment-level egress controls are not implemented. Arbitrary custom provider URLs remain disabled until credentialed outbound egress receives a dedicated SSRF and credential-exfiltration review. Do not enable production execution until the deployment environment, database migrations, provider billing controls, rate limits, and abuse monitoring have been reviewed.
+
+## Email notifications
+
+The Send Email action (`send_email`) accepts only `{ subject?, body? }` templates; there is no recipient field. Messages are delivered to the workflow owner's account email, so public webhook or scheduled triggers cannot send mail to third parties.
+
+- **Provider:** Resend's HTTPS API (`https://api.resend.com/emails`) called with `fetch`, no SDK dependency. Server-only `RESEND_API_KEY` and `EMAIL_FROM` (an address on a domain verified in Resend) enable it. If either is missing, Send Email nodes fail with `Email notifications are not configured on this server.` and nothing is sent.
+- **Limits:** rendered subject 1–200 characters (control characters removed), body 1–10,000 characters; at most 3 emails per run and 20 successful sends per owner per rolling 24 hours (counted from `execution_logs`); each request times out after at most 2.5 s within the run budget; redirects are rejected.
+- **Privacy:** logs record only `{ sent: true }`. Addresses, subjects, bodies, and provider responses are never logged or returned; provider failures map to fixed messages.
+- **Known gaps:** account emails are not verified yet, so a user could register with someone else's address and email it within the daily cap. Email verification and sender-reputation monitoring belong to Phase 9 hardening.
+

@@ -3,6 +3,7 @@ import { db } from '../../db';
 import { connections, executions, executionLogs, workflowNodes, workflows } from '../../db/schema';
 import { findOwnedAICredential } from '../../server/ai/owned-credential-lookup';
 import { createOwnerAIProviderResolver } from '../../server/ai/provider-resolver';
+import { createOwnerEmailNotifier } from '../../server/notifications/owner-email';
 import { executeWorkflowGraph } from '../../server/execution/engine';
 import { handleScheduleTick, type ScheduleExecutionStore } from '../../server/workflows/schedule-trigger-core';
 
@@ -95,9 +96,13 @@ export default async function scheduler(request: Request): Promise<Response> {
   return handleScheduleTick(request, {
     cronSecret: process.env.CRON_SECRET,
     store: createScheduleStore(),
-    runGraph: async (graph, input, ownerId) => executeWorkflowGraph(graph, input, {
-      triggerCategory: 'schedule_trigger',
-      resolveAIProvider: createOwnerAIProviderResolver(ownerId, findOwnedAICredential),
-    }),
+    runGraph: async (graph, input, ownerId) => {
+      const sendEmail = createOwnerEmailNotifier(ownerId);
+      return executeWorkflowGraph(graph, input, {
+        triggerCategory: 'schedule_trigger',
+        resolveAIProvider: createOwnerAIProviderResolver(ownerId, findOwnedAICredential),
+        ...(sendEmail ? { sendEmail } : {}),
+      });
+    },
   });
 }

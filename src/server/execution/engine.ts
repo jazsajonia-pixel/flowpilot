@@ -8,6 +8,7 @@ import { parseResponseJsonSchema, parseStructuredJsonResponse } from '../ai/json
 import { safeExecutionError, summarizeNodeInput, summarizeNodeOutput, type SafeExecutionLog } from './logging';
 import { OutboundRequestError, sendPublicHttpsRequest, type OutboundHttpResult } from './outbound-http';
 import { resolveTemplate, type ExecutionContext } from './templates';
+import { EmailNotificationError, type OwnerEmailSender } from '../notifications/email';
 
 const MAX_GRAPH_NODES = 50;
 const MAX_EXECUTED_NODES = 25;
@@ -40,6 +41,8 @@ export interface WorkflowExecutionOptions {
   request?: typeof sendPublicHttpsRequest;
   aiProvider?: AIProvider;
   resolveAIProvider?: AIProviderResolver;
+  /** Owner-only email sender; when absent, Send Email nodes fail closed. */
+  sendEmail?: OwnerEmailSender;
   now?: () => number;
 }
 
@@ -198,6 +201,12 @@ function renderAIText(template: string, context: ExecutionContext): string {
   return text;
 }
 
+function renderTemplateText(template: string, context: ExecutionContext): string {
+  const resolved = resolveTemplate(template, context);
+  if (typeof resolved === 'string') return resolved;
+  return JSON.stringify(resolved) ?? '';
+}
+
 function numberConfig(config: Record<string, unknown>, key: string): number | undefined {
   const value = config[key];
   return typeof value === 'number' ? value : undefined;
@@ -329,6 +338,14 @@ async function runNode(
   if (node.category === 'filter') return applyFilter(node, context);
   if (node.category === 'gemini_ai' || node.category.startsWith('ai_')) {
     return runAINode(node, context, executionOptions, remainingMs);
+  }
+
+  if (node.category === 'send_email') {
+    if (!executionOptions.sendEmail) throw new EmailNotificationError('Email notifications are not configured on this server.');
+    const subject = renderTemplateText(requireString(node.config, 'subject'), context);
+    const text = renderTemplateText(requireString(node.config, 'body'), context);
+    await executionOptions.sendEmail({ subject, text }, remainingMs);
+    return { sent: true };
   }
 
   if (node.category === 'http_request' || node.category === 'webhook_action') {
