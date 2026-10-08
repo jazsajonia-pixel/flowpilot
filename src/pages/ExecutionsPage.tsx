@@ -82,6 +82,7 @@ export function ExecutionsPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="truncate text-sm font-semibold">{item.workflowTitle}</span>
                   <ExecutionStatusBadge item={item} />
+                  {item.retryOf && <span className="rounded border px-1.5 text-[10px] text-muted-foreground">Retry</span>}
                 </div>
                 <p className="text-[11px] text-muted-foreground">
                   {TRIGGER_LABELS[item.trigger]} · {new Date(item.createdAt).toLocaleString()} · {formatDuration(item.durationMs)} · {item.steps.succeeded} ok{item.steps.failed ? `, ${item.steps.failed} failed` : ''}{item.steps.skipped ? `, ${item.steps.skipped} skipped` : ''}

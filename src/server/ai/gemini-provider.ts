@@ -1,6 +1,6 @@
 import { GoogleGenAI, type GenerateContentConfig, type GenerateContentResponse } from '@google/genai';
 import { isAIModelForProvider, type AIProvider, type AIPromptInput, type AIProviderResponse } from '../../types/ai';
-import { AIProviderError } from './errors';
+import { AIProviderError, isTransientProviderFailure } from './errors';
 
 export { AIProviderError } from './errors';
 
@@ -89,9 +89,10 @@ export class GeminiAIProvider implements AIProvider {
     let response: GenerateContentResponse;
     try {
       response = await client.models.generateContent({ model, contents: input.prompt, config });
-    } catch {
-      if (input.abortSignal?.aborted) throw new AIProviderError('The AI request timed out.');
-      throw new AIProviderError('The AI provider request failed.');
+    } catch (error) {
+      const aborted = input.abortSignal?.aborted === true;
+      if (aborted) throw new AIProviderError('The AI request timed out.');
+      throw new AIProviderError('The AI provider request failed.', { retryable: isTransientProviderFailure(error, aborted) });
     }
 
     const text = response.text;

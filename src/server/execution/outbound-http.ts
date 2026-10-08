@@ -8,10 +8,18 @@ const MAX_RESPONSE_BYTES = 64 * 1024;
 const MAX_URL_LENGTH = 2_048;
 const privateHostSuffixes = ['.localhost', '.local', '.internal', '.test'];
 
+export type OutboundFailureKind = 'http_status' | 'connection' | 'timeout' | 'rejected';
+
 export class OutboundRequestError extends Error {
-  constructor(message: string) {
+  /** How the request failed; `rejected` means it was blocked before or without contacting the server. */
+  readonly kind: OutboundFailureKind;
+  readonly status: number | null;
+
+  constructor(message: string, options: { kind?: OutboundFailureKind; status?: number } = {}) {
     super(message);
     this.name = 'OutboundRequestError';
+    this.kind = options.kind ?? 'rejected';
+    this.status = options.status ?? null;
   }
 }
 
@@ -131,7 +139,7 @@ function requestPinnedHttps(
           }
           chunks.push(buffer);
         });
-        response.on('error', () => reject(new OutboundRequestError('The external request failed.')));
+        response.on('error', () => reject(new OutboundRequestError('The external request failed.', { kind: 'connection' })));
         response.on('end', () => {
           const status = response.statusCode ?? 0;
           if (status >= 300 && status < 400) {
@@ -139,7 +147,7 @@ function requestPinnedHttps(
             return;
           }
           if (status < 200 || status >= 300) {
-            reject(new OutboundRequestError(`The external service returned HTTP ${status}.`));
+            reject(new OutboundRequestError(`The external service returned HTTP ${status}.`, { kind: 'http_status', status }));
             return;
           }
           const text = Buffer.concat(chunks).toString('utf8');
@@ -159,10 +167,10 @@ function requestPinnedHttps(
     );
 
     request.setTimeout(Math.max(1, timeoutMs), () => {
-      request.destroy(new OutboundRequestError('The external request timed out.'));
+      request.destroy(new OutboundRequestError('The external request timed out.', { kind: 'timeout' }));
     });
     request.on('error', (error: unknown) => {
-      reject(error instanceof OutboundRequestError ? error : new OutboundRequestError('The external request failed.'));
+      reject(error instanceof OutboundRequestError ? error : new OutboundRequestError('The external request failed.', { kind: 'connection' }));
     });
     if (body !== undefined) {
       const bodyBuffer = Buffer.from(body, 'utf8');

@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, CircleSlash, XCircle } from 'lucide-react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, CheckCircle2, CircleSlash, RotateCcw, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ExecutionStatusBadge } from '@/components/executions/ExecutionStatusBadge';
-import { formatDuration, getExecutionDetail, TRIGGER_LABELS, type ExecutionDetail } from '@/lib/execution-api';
+import { formatDuration, getExecutionDetail, retryExecutionRun, TRIGGER_LABELS, type ExecutionDetail } from '@/lib/execution-api';
 
 const stepIcon = { success: CheckCircle2, error: XCircle, skipped: CircleSlash } as const;
 const stepColor = { success: 'text-emerald-600', error: 'text-destructive', skipped: 'text-muted-foreground' } as const;
@@ -18,10 +18,27 @@ export function ExecutionDetailPage() {
   const { executionId = '' } = useParams();
   const [execution, setExecution] = useState<ExecutionDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
+  const [retryError, setRetryError] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  async function retry() {
+    setRetrying(true);
+    setRetryError(null);
+    try {
+      const next = await retryExecutionRun(executionId);
+      navigate(`/executions/${next.id}`);
+    } catch (reason) {
+      setRetryError(reason instanceof Error ? reason.message : 'Retry failed.');
+    } finally {
+      setRetrying(false);
+    }
+  }
 
   useEffect(() => {
     setExecution(null);
     setError(null);
+    setRetryError(null);
     getExecutionDetail(executionId).then(setExecution).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : 'Run could not be loaded.'));
   }, [executionId]);
 
@@ -39,6 +56,19 @@ export function ExecutionDetailPage() {
                 <ExecutionStatusBadge item={execution} />
               </div>
               <CardDescription className="font-mono text-[11px]">{execution.id}</CardDescription>
+              {(execution.status === 'failed' || execution.interrupted) && (
+                <div className="space-y-1.5 pt-2">
+                  <Button size="sm" className="gap-2" disabled={!execution.retry.allowed || retrying} onClick={() => void retry()}>
+                    <RotateCcw className={`h-3.5 w-3.5 ${retrying ? 'animate-spin' : ''}`} /> {retrying ? 'Retrying…' : 'Retry run'}
+                  </Button>
+                  <p className="text-[11px] text-muted-foreground">
+                    {execution.retry.allowed ? "Runs again with the workflow's current saved steps." : execution.retry.reason}
+                  </p>
+                  {retryError && <p className="text-[11px] text-destructive" role="alert">{retryError}</p>}
+                </div>
+              )}
+              {execution.retryOf && <p className="pt-1 text-[11px]"><Link className="text-primary underline" to={`/executions/${execution.retryOf}`}>Retry of an earlier run</Link></p>}
+              {execution.retriedBy && <p className="pt-1 text-[11px]"><Link className="text-primary underline" to={`/executions/${execution.retriedBy}`}>View the retry</Link></p>}
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
               <div><p className="text-muted-foreground">Trigger</p><p className="font-medium">{TRIGGER_LABELS[execution.trigger]}</p></div>
