@@ -5,6 +5,7 @@ import { db } from '../../db';
 import { connections, credentials, executions, executionLogs, workflowNodes, workflows } from '../../db/schema';
 import { getRequestUser } from '../../server/auth/request-user';
 import { isSameOriginRequest, jsonResponse, parseJsonBody } from '../../server/auth/http';
+import { createOwnerEmailNotifier } from '../../server/notifications/owner-email';
 import { executeWorkflowGraph } from '../../server/execution/engine';
 import { summarizeTriggerInput } from '../../server/execution/logging';
 import { isAIProviderId } from '../../types/ai';
@@ -115,7 +116,8 @@ export default async function workflowExecutions(request: Request, context: Cont
       return { ...credential, provider: credential.provider };
     });
 
-    const result = await executeWorkflowGraph(parsedGraph.data, triggerInput, { resolveAIProvider });
+    const sendEmail = createOwnerEmailNotifier(user.id);
+    const result = await executeWorkflowGraph(parsedGraph.data, triggerInput, { resolveAIProvider, ...(sendEmail ? { sendEmail } : {}) });
     if (result.logs.length > 0) {
       await db.insert(executionLogs).values(
         result.logs.map((log) => ({

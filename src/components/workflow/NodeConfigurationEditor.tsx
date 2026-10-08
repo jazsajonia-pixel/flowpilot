@@ -155,6 +155,31 @@ export function NodeConfigurationEditor({ node, onChange, credentials = [] }: No
     );
   }
 
+  if (node.data.category === 'send_email') {
+    return (
+      <div className="space-y-3">
+        <label className="block space-y-1.5 text-xs font-medium">
+          Subject
+          <Input value={textField('subject')} maxLength={512} placeholder="New lead: {{trigger.name}}" onChange={(event) => update('subject', event.target.value)} />
+        </label>
+        <label className="block space-y-1.5 text-xs font-medium">
+          Message
+          <textarea
+            value={textField('body')}
+            maxLength={16_384}
+            rows={6}
+            placeholder={'Summary:\n{{steps.NODE_ID.result}}'}
+            onChange={(event) => update('body', event.target.value)}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          />
+        </label>
+        <p className="rounded-lg border bg-muted/40 p-3 text-[11px] leading-5 text-muted-foreground">
+          Sends a plain-text email to your FlowPilot account email only. Templates such as <code>{'{{trigger.field}}'}</code> are filled in at run time. Limits: 3 emails per run and 20 per day; rendered subjects up to 200 characters and messages up to 10,000.
+        </p>
+      </div>
+    );
+  }
+
   if (node.data.category === 'condition') {
     return (
       <div className="space-y-3">

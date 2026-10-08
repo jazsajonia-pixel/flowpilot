@@ -70,7 +70,7 @@ This document outlines the sequential phases for building FlowPilot AI.
 ### Phase 7: Automation Integrations & Triggers (IN PROGRESS)
 - Implement Webhook Trigger endpoint receiver with dynamic path routing. *(Initial bounded slice complete.)*
 - Implement Schedule / Cron Trigger system. *(Hobby-compatible daily/weekly UTC slice complete; see `docs/schedule-trigger.md`.)*
-- Build Email notification action nodes and database CRUD action nodes.
+- Build Email notification action nodes and database CRUD action nodes. *(Owner-only Send Email action complete; database CRUD actions next.)*
 
 ### Phase 8: Execution Monitoring, Logs & Reliability
 - Build real-time Execution History and Detailed Log Inspector in Frontend.

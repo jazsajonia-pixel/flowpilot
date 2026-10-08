@@ -4,6 +4,7 @@ import { db } from '../../db';
 import { connections, executions, executionLogs, workflowNodes, workflows } from '../../db/schema';
 import { findOwnedAICredential } from '../../server/ai/owned-credential-lookup';
 import { createOwnerAIProviderResolver } from '../../server/ai/provider-resolver';
+import { createOwnerEmailNotifier } from '../../server/notifications/owner-email';
 import { executeWorkflowGraph } from '../../server/execution/engine';
 import { handleWebhookRequest } from '../../server/workflows/webhook-trigger-core';
 import type { WorkflowGraphInput } from '../../server/workflows/graph-validation';
@@ -99,5 +100,6 @@ async function executeWorkflowGraphWithOwner(
   ownerId: string,
 ) {
   const resolveAIProvider = createOwnerAIProviderResolver(ownerId, findOwnedAICredential);
-  return executeWorkflowGraph(graph, input, { triggerCategory: 'webhook_trigger', resolveAIProvider });
+  const sendEmail = createOwnerEmailNotifier(ownerId);
+  return executeWorkflowGraph(graph, input, { triggerCategory: 'webhook_trigger', resolveAIProvider, ...(sendEmail ? { sendEmail } : {}) });
 }
