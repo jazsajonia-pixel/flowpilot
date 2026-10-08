@@ -18,7 +18,7 @@ FlowPilot AI is a modern, web-based visual automation platform that enables user
 - **Phase 4 — Workflow Execution Engine:** COMPLETE
 - **Phase 5 — Gemini AI Integration:** COMPLETE
 - **Phase 6 — Bring Your Own AI:** COMPLETE
-- **Phase 7 — Webhook Trigger slice:** COMPLETE; Schedule/Cron, Email, and Database actions remain in progress
+- **Phase 7 — Webhook Trigger and Schedule Trigger slices:** COMPLETE; Email and Database actions remain in progress
 
 ---
 
@@ -56,12 +56,13 @@ Condition (IF Priority == "High")
 ### Backend & API
 - **Runtime:** Node.js with TypeScript
 - **API Architecture:** RESTful Endpoints
-- **Serverless Hosting:** Netlify Functions
+- **Hosting:** Vercel (static Vite build + one bundled Node serverless API function, `api/[[...path]].ts`)
+- **Scheduling:** One once-daily Vercel Cron job (Hobby plan: starts 00:00–00:59 UTC) — see [`docs/schedule-trigger.md`](docs/schedule-trigger.md)
 
 ### Database Layer
-- **Database:** Netlify Database (PostgreSQL)
+- **Database:** Neon PostgreSQL (separate production and staging/Preview projects)
 - **ORM & Migrations:** Drizzle ORM & drizzle-kit
-- **Serverless Access:** `@netlify/database` integration via Netlify Functions
+- **Serverless Access:** `drizzle-orm/neon-http` with `@neondatabase/serverless` (no interactive transactions; use `db.batch` or single statements)
 
 ### AI Layer
 - **Default Built-in Provider:** Google Gemini API
@@ -83,13 +84,13 @@ FlowPilot AI
 │   ├── Integrations
 │   └── Settings
 │
-├── API & Serverless Backend (Netlify Functions)
+├── API & Serverless Backend (Vercel Function + bundled dispatcher)
 │   ├── Authentication & Authorization
 │   ├── Workflows API
 │   ├── Executions API
 │   ├── AI Router
 │   ├── Credentials Vault
-│   └── Database Health Check (/.netlify/functions/db-health)
+│   └── Database Health Check (/api/db-health)
 │
 ├── Workflow Engine
 │   ├── Trigger System (Manual, Webhook, Schedule)
@@ -104,7 +105,7 @@ FlowPilot AI
 │   ├── User OpenAI (BYO)
 │   └── Custom Provider Adapters
 │
-└── Database (Netlify Database / PostgreSQL / Drizzle ORM)
+└── Database (Neon PostgreSQL / Drizzle ORM)
     ├── Users & Auth
     ├── Workflows & Nodes
     ├── Executions & Step Logs
@@ -176,8 +177,9 @@ npm test
 # Run Vite dev server
 npm run dev
 
-# Netlify Function API routes (including /api/auth/*) require Netlify Dev
-# Run `npx netlify dev` when the Netlify CLI is available/configured
+# API routes (including /api/auth/*) are served by the Vercel function in api/[[...path]].ts,
+# which loads server-build/dispatcher.mjs produced by `npm run build`.
+# Run them locally with `vercel dev` when the Vercel CLI is available/configured.
 
 # Build for production
 npm run build

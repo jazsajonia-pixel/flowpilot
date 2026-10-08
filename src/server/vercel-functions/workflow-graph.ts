@@ -1,10 +1,11 @@
 import type { Config, Context } from '@netlify/functions';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, ne, sql } from 'drizzle-orm';
 import { db } from '../../db';
 import { connections, workflowNodes, workflows } from '../../db/schema';
 import { getRequestUser } from '../../server/auth/request-user';
 import { isSameOriginRequest, jsonResponse, parseJsonBody } from '../../server/auth/http';
 import { workflowOwnerScope } from '../../server/workflows/ownership';
+import { checkWorkflowActivation } from '../../server/workflows/activation';
 import { workflowGraphSchema } from '../../server/workflows/graph-validation';
 import { workflowIdSchema } from '../../server/workflows/validation';
 
@@ -88,54 +89,68 @@ export default async function workflowGraph(request: Request, context: Context):
     }
 
     const graph = parsed.data;
-    const saved = await db.transaction(async (transaction) => {
-      const [owned] = await transaction
-        .select({ id: workflows.id })
-        .from(workflows)
-        .where(workflowOwnerScope(workflowId, user.id))
-        .limit(1);
-      if (!owned) return false;
+    const [owned] = await db
+      .select({ id: workflows.id, isActive: workflows.isActive })
+      .from(workflows)
+      .where(ownerScope)
+      .limit(1);
+    if (!owned) return jsonResponse(404, { error: 'Workflow not found.' });
 
-      await transaction.delete(connections).where(eq(connections.workflowId, workflowId));
-      await transaction.delete(workflowNodes).where(eq(workflowNodes.workflowId, workflowId));
+    // An active workflow whose new graph could no longer be activated is deactivated in the same batch.
+    let deactivate = false;
+    if (owned.isActive) {
+      const activation = await checkWorkflowActivation(graph, async () => {
+        const [row] = await db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(workflows)
+          .where(and(
+            eq(workflows.isActive, true),
+            ne(workflows.id, workflowId),
+            sql`exists (select 1 from ${workflowNodes} where ${workflowNodes.workflowId} = ${workflows.id} and ${workflowNodes.category} = 'schedule_trigger')`,
+          ));
+        return row?.count ?? 0;
+      });
+      deactivate = !activation.ok;
+    }
 
-      if (graph.nodes.length > 0) {
-        await transaction.insert(workflowNodes).values(
-          graph.nodes.map((node) => ({
-            id: node.id,
-            workflowId,
-            type: node.type,
-            category: node.category,
-            label: node.label,
-            position: node.position,
-            config: node.config,
-          })),
-        );
-      }
-
-      if (graph.connections.length > 0) {
-        await transaction.insert(connections).values(
-          graph.connections.map((connection) => ({
-            id: connection.id,
-            workflowId,
-            sourceNodeId: connection.sourceNodeId,
-            sourceHandle: connection.sourceHandle ?? null,
-            targetNodeId: connection.targetNodeId,
-            targetHandle: connection.targetHandle ?? null,
-          })),
-        );
-      }
-
-      await transaction
+    // The Neon HTTP driver has no interactive transactions; db.batch runs these statements atomically.
+    const nodeInsert = graph.nodes.length > 0
+      ? [db.insert(workflowNodes).values(
+        graph.nodes.map((node) => ({
+          id: node.id,
+          workflowId,
+          type: node.type,
+          category: node.category,
+          label: node.label,
+          position: node.position,
+          config: node.config,
+        })),
+      )]
+      : [];
+    const connectionInsert = graph.connections.length > 0
+      ? [db.insert(connections).values(
+        graph.connections.map((connection) => ({
+          id: connection.id,
+          workflowId,
+          sourceNodeId: connection.sourceNodeId,
+          sourceHandle: connection.sourceHandle ?? null,
+          targetNodeId: connection.targetNodeId,
+          targetHandle: connection.targetHandle ?? null,
+        })),
+      )]
+      : [];
+    await db.batch([
+      db.delete(connections).where(eq(connections.workflowId, workflowId)),
+      db.delete(workflowNodes).where(eq(workflowNodes.workflowId, workflowId)),
+      ...nodeInsert,
+      ...connectionInsert,
+      db
         .update(workflows)
-        .set({ updatedAt: new Date() })
-        .where(and(eq(workflows.id, workflowId), eq(workflows.ownerId, user.id)));
-      return true;
-    });
+        .set({ updatedAt: new Date(), ...(deactivate ? { isActive: false } : {}) })
+        .where(ownerScope),
+    ]);
 
-    return saved
-      ? jsonResponse(200, { ok: true })
-      : jsonResponse(404, { error: 'Workflow not found.' });
+    return jsonResponse(200, { ok: true, deactivated: deactivate });
   } catch (error) {
     if (request.method === 'PUT' && hasDatabaseErrorCode(error, '23503')) {
       return jsonResponse(400, { error: 'Workflow graph references invalid nodes.' });

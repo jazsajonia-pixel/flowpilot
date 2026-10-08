@@ -79,7 +79,7 @@ export default async function workflowExecutions(request: Request, context: Cont
     if (!parsedGraph.success) return jsonResponse(422, { error: 'Workflow graph is invalid. Review its node settings and connections.' });
     const triggerNodes = parsedGraph.data.nodes.filter((node) => node.type === 'trigger');
     if (triggerNodes.length !== 1 || triggerNodes[0].category !== 'manual_trigger') {
-      return jsonResponse(422, { error: 'Phase 4 can run workflows with one Manual Trigger. Webhook and schedule triggers are planned for Phase 7.' });
+      return jsonResponse(422, { error: 'Manual runs require one Manual Trigger. Webhook and Schedule Trigger workflows run after activation.' });
     }
     if (parsedGraph.data.nodes.length > 50) return jsonResponse(422, { error: 'A manual run is limited to 50 workflow nodes.' });
 

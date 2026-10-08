@@ -147,11 +147,15 @@ export const executions = pgTable(
     startedAt: timestamp('started_at', { withTimezone: true }),
     completedAt: timestamp('completed_at', { withTimezone: true }),
     error: text('error'),
+    // UTC-midnight slot for Schedule Trigger runs; NULL for manual and webhook runs.
+    scheduledAt: timestamp('scheduled_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
     index('executions_workflow_created_at_idx').on(table.workflowId, table.createdAt),
     index('executions_status_idx').on(table.status),
+    // Durable idempotency: at most one scheduled run per workflow per slot (NULLs never conflict).
+    uniqueIndex('executions_workflow_scheduled_at_unique').on(table.workflowId, table.scheduledAt),
   ],
 );
 

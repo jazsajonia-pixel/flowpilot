@@ -20,7 +20,7 @@ FlowPilot AI
 │   ├── Integrations Hub
 │   └── User Settings
 │
-├── API Layer (REST / Netlify Functions)
+├── API Layer (REST / Vercel Function + bundled dispatcher)
 │   ├── Authentication & Authorization
 │   ├── Workflows Management API
 │   ├── Execution Logs API
@@ -41,7 +41,7 @@ FlowPilot AI
 │   ├── BYO Gemini/OpenAI providers (server-side)
 │   └── Custom provider adapters (code-level extension point)
 │
-└── Database Layer (Netlify Database / PostgreSQL / Drizzle ORM)
+└── Database Layer (Neon PostgreSQL / Drizzle ORM)
     ├── Users & Auth
     ├── Workflows & Templates
     ├── Nodes & Connections
@@ -63,7 +63,7 @@ FlowPilot AI
 - **Visual Graph Editor:** `@xyflow/react` (React Flow) for interactive node connection, drag-and-drop workflow construction, and node inspection.
 
 ### 2.2 API & Serverless Backend
-- **Platform:** Netlify Functions (Node.js REST API serverless endpoints).
+- **Platform:** Vercel. `api/[[...path]].ts` is a single Node serverless function that loads `server-build/dispatcher.mjs`, an esbuild bundle of `vercel/dispatcher.ts`; the dispatcher routes `/api/*` paths to handlers in `src/server/vercel-functions/`. The `netlify/functions/` files are legacy entry points kept for reference. A once-daily Vercel Cron job calls `/api/internal/schedule-tick` (see [`schedule-trigger.md`](schedule-trigger.md)).
 - **Validation:** Server-side request parsing and validation using Zod.
 - **Security:** Phase 2C establishes server-side email/password authentication and revocable cookie sessions. Phases 2D and 3 protect workflow metadata and graph endpoints with owner-scoped queries. Phase 4 requires the same owner check to create executions and limits outbound requests to public HTTPS. Phase 6 adds encrypted user credentials and session-owner checks before any server-side decryption. Public endpoint abuse controls and per-user provider quotas remain later work. Node 22 is pinned through `.nvmrc`.
 
@@ -72,20 +72,20 @@ FlowPilot AI
 React Frontend
       │ (HTTPS REST API / JSON)
       ▼
-Netlify Functions
+Vercel Function (bundled dispatcher)
       │
       ▼
-Drizzle ORM (drizzle-orm/netlify-db)
+Drizzle ORM (drizzle-orm/neon-http)
       │
       ▼
-Netlify Database (PostgreSQL)
+Neon PostgreSQL (production project / staging project for Preview)
 ```
-- **Native Adapter:** Server-side database operations use Netlify's native Drizzle adapter (`drizzle-orm/netlify-db` via `@netlify/db`).
-- **Strict Boundary:** Database access logic (`src/db/`) is restricted exclusively to server-side Netlify Functions.
+- **Driver:** Server-side database operations use `drizzle-orm/neon-http` over `@neondatabase/serverless`, configured by the server-only `DATABASE_URL`. This HTTP driver does not support interactive transactions (`db.transaction` always throws); multi-statement writes must use `db.batch([...])` or a single conditional SQL statement.
+- **Strict Boundary:** Database access logic (`src/db/`) is restricted exclusively to server-side API handlers.
 - **Zero Client Exposure:** Database credentials and connection strings are never exposed to Vite client bundles or React UI code.
 - **Provider Secret Boundary:** `GEMINI_API_KEY` and `CREDENTIAL_ENCRYPTION_KEY` are server-only environment variables and are never exposed to Vite. User BYO keys are encrypted with AES-256-GCM in `credentials.encrypted_payload`; graph configuration stores only an owner-scoped credential ID, and management API responses never contain plaintext keys or ciphertext.
 - **Schema & Migrations:** Managed with Drizzle ORM and `drizzle-kit`, configured with migration outputs under `netlify/database/migrations/`. Phase 2B defines core entities; Phase 2C adds password-hash/session storage; Phases 2D and 3 provide owner-scoped metadata/graph access; Phase 4 uses the existing execution and execution-log tables. See [`database-schema.md`](database-schema.md), [`authentication.md`](authentication.md), [`workflow-api.md`](workflow-api.md), [`workflow-builder.md`](workflow-builder.md), and [`workflow-engine.md`](workflow-engine.md) for data and security boundaries.
-- **Production Verification:** Remote production database query execution requires an active linked Netlify Database environment.
+- **Environments:** Vercel Production uses the `flowpilot-production` Neon project; Preview uses `flowpilot-staging`. `DATABASE_URL` and `CREDENTIAL_ENCRYPTION_KEY` are set separately per Vercel target, and `CRON_SECRET` is set for Production. Every migration must be applied to both databases before deploying code that depends on it.
 
 ### 2.4 AI Provider Layer
 The workflow runner depends on a shared `AIProvider` interface. The built-in `GeminiAIProvider` uses Google's `@google/genai` SDK and the environment-managed `GEMINI_API_KEY`; user-managed Gemini and OpenAI adapters use their vendor SDKs only on the server. Model IDs are curated and validated by provider; the stable Gemini default is `gemini-3.8-flash` and the OpenAI default is `gpt-6-luna`.

@@ -14,7 +14,7 @@ Phase 2B adds relational structure only. It does **not** implement authenticatio
 | `workflows` | A user's workflow definition | `owner_id` references `users`; title, description, active flag. |
 | `nodes` | Workflow graph nodes | `workflow_id` references `workflows`; stores node type/category, label, JSONB position and JSONB configuration. |
 | `connections` | Directed graph edges | References source and target nodes through composite `(workflow_id, node_id)` foreign keys, preventing cross-workflow edges; stores optional handles. |
-| `executions` | Workflow run records | References a workflow; execution status is constrained to `pending`, `running`, `completed`, or `failed`; trigger data is JSONB. |
+| `executions` | Workflow run records | References a workflow; execution status is constrained to `pending`, `running`, `completed`, or `failed`; trigger data is JSONB. `scheduled_at` (nullable `timestamptz`) records the UTC-midnight slot of a Schedule Trigger run; the unique index `executions_workflow_scheduled_at_unique (workflow_id, scheduled_at)` permits one scheduled run per workflow per slot (NULLs never conflict). |
 | `execution_logs` | Per-node execution history | References an execution; stores the historical node ID without a node foreign key so workflow edits do not invalidate old logs. Input/output data is JSONB. |
 | `integrations` | A user's external integration metadata | References `users`; provider, display name, status, and non-secret JSONB settings. |
 | `credentials` | Opaque secret payload storage | References `users` and optionally an integration owned by the same user; secret material belongs only in `encrypted_payload`. |
@@ -48,4 +48,4 @@ Check migration consistency with:
 npx drizzle-kit check
 ```
 
-These commands generate and inspect SQL locally. Applying the migration to Netlify Database requires a linked database environment and is a separate deployment operation; this phase does not apply a production migration.
+These commands generate and inspect SQL locally. Applying a migration is a separate deployment step: apply it to **both** Neon projects (`flowpilot-staging` for Preview and `flowpilot-production`) before deploying code that depends on it. Migrations live under `netlify/database/migrations/` for historical reasons; the path is unrelated to hosting. `0003_schedule_run_idempotency` adds `executions.scheduled_at` and its unique index.

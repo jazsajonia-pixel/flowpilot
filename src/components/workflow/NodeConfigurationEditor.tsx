@@ -2,6 +2,7 @@ import type { ChangeEvent } from 'react';
 import { Input } from '@/components/ui/input';
 import { aiModelsForProvider, DEFAULT_AI_MODELS, isAIProviderId, type AICredentialSummary, type AIProviderId } from '@/types/ai';
 import type { FlowNode } from './flow-types';
+import { WEEKDAY_LABELS } from './schedule-summary';
 
 interface NodeConfigurationEditorProps {
   node: FlowNode;
@@ -101,6 +102,57 @@ export function NodeConfigurationEditor({ node, onChange, credentials = [] }: No
 
   if (node.data.category === 'webhook_trigger') {
     return <div className="space-y-2 rounded-lg border border-sky-200 bg-sky-50 p-3 text-xs leading-5 text-sky-950"><strong>Webhook Trigger</strong><p>External systems start this workflow with a JSON object sent to the owner-only webhook URL. Save the graph, then activate the workflow to accept requests.</p><p className="text-[11px] text-sky-800">The endpoint URL is a bearer secret. Do not publish it in client code, logs, or public documentation.</p></div>;
+  }
+
+  if (node.data.category === 'schedule_trigger') {
+    const frequency = config.frequency === 'daily' || config.frequency === 'weekly' ? config.frequency : '';
+    const weekdays = Array.isArray(config.weekdays) ? config.weekdays.filter((day): day is number => typeof day === 'number') : [];
+    const toggleWeekday = (day: number) => {
+      const next = weekdays.includes(day) ? weekdays.filter((value) => value !== day) : [...weekdays, day].sort((a, b) => a - b);
+      onChange({ ...config, frequency: 'weekly', weekdays: next });
+    };
+    return (
+      <div className="space-y-3">
+        <label className="block space-y-1.5 text-xs font-medium">
+          Frequency
+          <select
+            value={frequency}
+            onChange={(event) => {
+              const value = event.target.value;
+              if (value === 'daily') onChange({ frequency: 'daily' });
+              else if (value === 'weekly') onChange({ frequency: 'weekly', weekdays });
+              else onChange({});
+            }}
+            className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+          >
+            <option value="">Choose a frequency</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly (selected UTC weekdays)</option>
+          </select>
+        </label>
+        {frequency === 'weekly' && (
+          <fieldset className="space-y-1.5">
+            <legend className="text-xs font-medium">UTC weekdays</legend>
+            <div className="flex flex-wrap gap-1.5">
+              {WEEKDAY_LABELS.map((label, day) => (
+                <button
+                  key={label}
+                  type="button"
+                  aria-pressed={weekdays.includes(day)}
+                  onClick={() => toggleWeekday(day)}
+                  className={`h-8 min-w-11 rounded-md border px-2 text-xs ${weekdays.includes(day) ? 'border-primary bg-primary text-primary-foreground' : 'border-input bg-background'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+        )}
+        <p className="rounded-lg border border-violet-200 bg-violet-50 p-3 text-[11px] leading-5 text-violet-950">
+          Scheduled runs start once per due day between 00:00 and 00:59 UTC (Vercel Hobby Cron precision). Time-of-day selection is not available. Use <code>{'{{trigger.scheduledAt}}'}</code> in later steps. Save the graph, then activate the workflow.
+        </p>
+      </div>
+    );
   }
 
   if (node.data.category === 'condition') {

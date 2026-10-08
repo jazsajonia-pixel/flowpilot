@@ -22,6 +22,7 @@ import { demoWorkflow, demoWorkflowGraph } from '@/lib/workflow-demo';
 import { isWorkflowConnectionAllowed } from '@/lib/workflow-graph';
 import type { AICredentialSummary } from '@/types/ai';
 import type { WorkflowNodeDefinition } from '@/types/workflow';
+import { describeSchedule } from '@/components/workflow/schedule-summary';
 
 interface WorkflowEditorPageProps {
   demo?: boolean;
@@ -169,7 +170,11 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
       setSaveState('saving');
       setSaveError(null);
       try {
-        await saveWorkflowGraph(workflowId, snapshot);
+        const { deactivated } = await saveWorkflowGraph(workflowId, snapshot);
+        if (deactivated) {
+          setWorkflow((current) => (current ? { ...current, isActive: false } : current));
+          setActivationError('This workflow was deactivated because the saved graph can no longer be activated. Review its trigger and activate again.');
+        }
         savedRevisionRef.current = version;
         if (version === revisionRef.current) setSaveState('saved');
       } catch (reason) {
@@ -256,7 +261,7 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
   }
 
   async function toggleActivation() {
-    if (demo || !workflowId || !workflow || !hasWebhookTrigger || hasUnsavedGraph || isActivationSaving) return;
+    if (demo || !workflowId || !workflow || !hasActivatableTrigger || hasUnsavedGraph || isActivationSaving) return;
     setIsActivationSaving(true);
     setActivationError(null);
     try {
@@ -389,6 +394,9 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
   const hasUnsavedGraph = revision > savedRevisionRef.current;
   const hasManualTrigger = nodes.some((node) => node.data.category === 'manual_trigger');
   const hasWebhookTrigger = nodes.some((node) => node.data.category === 'webhook_trigger');
+  const scheduleNode = nodes.find((node) => node.data.category === 'schedule_trigger');
+  const hasActivatableTrigger = hasWebhookTrigger || Boolean(scheduleNode);
+  const scheduleSummary = scheduleNode ? describeSchedule(scheduleNode.data.config) : null;
   const webhookUrl = workflow?.webhookToken ? `${window.location.origin}/api/hooks/${workflow.webhookToken}` : null;
   const saveLabel = demo
     ? 'Preview only'
@@ -482,14 +490,14 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
             {isRunning ? 'Running…' : 'Run'}
           </Button>
         )}
-        {!demo && hasWebhookTrigger && (
+        {!demo && hasActivatableTrigger && (
           <Button
             type="button"
             size="sm"
             variant={workflow.isActive ? 'default' : 'outline'}
             className="hidden shrink-0 gap-2 sm:inline-flex"
             disabled={hasUnsavedGraph || isActivationSaving}
-            title={hasUnsavedGraph ? 'Save graph changes before activating.' : 'Activate this webhook workflow.'}
+            title={hasUnsavedGraph ? 'Save graph changes before activating.' : hasWebhookTrigger ? 'Activate this webhook workflow.' : 'Activate this scheduled workflow.'}
             onClick={() => void toggleActivation()}
           >
             <Power className="h-3.5 w-3.5" />
@@ -524,6 +532,18 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
               <Power className="mr-1.5 h-3.5 w-3.5" /> {workflow.isActive ? 'Active' : 'Activate'}
             </Button>
           </div>
+        </section>
+      )}
+      {!demo && scheduleNode && (
+        <section className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b bg-violet-50 px-4 py-2 text-xs text-violet-950">
+          <div className="min-w-0">
+            <strong>Schedule</strong>
+            <p className="text-[11px]">{scheduleSummary ?? 'Choose Daily or Weekly in the Schedule Trigger settings.'}</p>
+            <p className="text-[10px] text-violet-800">Runs once per due day, starting between 00:00 and 00:59 UTC. Exact timing is not guaranteed and failed runs are not retried.</p>
+          </div>
+          <Button type="button" size="sm" variant={workflow.isActive ? 'default' : 'outline'} disabled={hasUnsavedGraph || isActivationSaving || !scheduleSummary} onClick={() => void toggleActivation()}>
+            <Power className="mr-1.5 h-3.5 w-3.5" /> {workflow.isActive ? 'Active' : 'Activate'}
+          </Button>
         </section>
       )}
       {activationError && !demo && <p className="shrink-0 border-b border-destructive/20 bg-destructive/5 px-4 py-2 text-xs text-destructive" role="alert">{activationError}</p>}
