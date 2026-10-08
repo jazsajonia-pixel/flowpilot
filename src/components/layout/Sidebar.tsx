@@ -6,6 +6,7 @@ import {
   Activity,
   Bot,
   Blocks,
+  Database,
   Settings,
   Sparkles,
   X,
@@ -27,6 +28,7 @@ const mainNav = [
 const aiNav = [
   { name: "AI Providers", href: "/ai-providers", icon: Bot },
   { name: "Integrations", href: "/integrations", icon: Blocks },
+  { name: "Data", href: "/data", icon: Database },
 ];
 
 const systemNav = [{ name: "Settings", href: "/settings", icon: Settings }];

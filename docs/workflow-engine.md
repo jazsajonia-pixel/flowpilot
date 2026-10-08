@@ -24,6 +24,8 @@ The runner processes each graph node at most once. Nodes with no active incoming
 | AI Generation | Produces text from a prompt and optional system instruction. |
 | HTTP Request | GET, POST, PUT, PATCH, or DELETE over restricted outbound HTTPS. GET/DELETE have no request body; other methods may send a JSON body. |
 | Webhook Action | Sends an outgoing HTTPS POST with an optional JSON body. |
+| Create Database Record | Inserts a JSON object into the owner's private `data_records` collection under a templated key (or a random UUID). Fails if the key exists. Output: `steps.<id>.key`. |
+| Update Database Record | Merges into (default) or replaces an existing owner record by collection and key. Fails if the record does not exist. |
 | Send Email | Sends a plain-text email to the workflow owner's account email only, with templated `subject` and `body`. See "Email notifications" below. |
 
 AI nodes share the `AIProvider` interface. Gemini can use the built-in server-managed `GEMINI_API_KEY` or a user-owned Gemini credential. OpenAI requires a user-owned OpenAI credential. Credential IDs and curated model IDs are stored with the workflow; plaintext keys are not. The engine resolves each key only after matching credential ID, provider, and owner ID to the signed-in session, then decrypts it in the server function. OpenAI calls use the official Responses API; OpenAI JSON Schema mode requires an object root, every object property in `required`, and `additionalProperties: false` on every object. Arbitrary endpoint URLs are not accepted. Custom adapters remain a code-level extension point, not user-configurable remote URLs.
@@ -66,4 +68,14 @@ The Send Email action (`send_email`) accepts only `{ subject?, body? }` template
 - **Limits:** rendered subject 1–200 characters (control characters removed), body 1–10,000 characters; at most 3 emails per run and 20 successful sends per owner per rolling 24 hours (counted from `execution_logs`); each request times out after at most 2.5 s within the run budget; redirects are rejected.
 - **Privacy:** logs record only `{ sent: true }`. Addresses, subjects, bodies, and provider responses are never logged or returned; provider failures map to fixed messages.
 - **Known gaps:** account emails are not verified yet, so a user could register with someone else's address and email it within the daily cap. Email verification and sender-reputation monitoring belong to Phase 9 hardening.
+
+## Database record actions
+
+Create/Update Database Record nodes write to FlowPilot's own `data_records` table, not to an external database. Every statement is scoped by the workflow owner's ID, so accounts can never read or change each other's records.
+
+- **Config:** `collection` (1–64 lowercase letters, numbers, `-`, `_`; not templated), `key` (template, rendered to 1–128 characters; optional for create), `data` (a JSON object template), and for update `mode: 'merge' | 'replace'`.
+- **Limits:** 16 KiB per record, 1,000 records per owner (enforced inside a single conditional `INSERT`), 10 record writes per run.
+- **Privacy:** logs record only `{ created: true }` / `{ updated: true }`; keys and data are never logged. Errors are fixed messages.
+- **Viewing:** `GET /api/data-records` lists the owner's collections, `GET /api/data-records?collection=name` returns the latest 100 records, and `DELETE /api/data-records?collection=name&key=k` deletes one record (same-origin only). The Data page in the app uses these routes.
+- **Not yet:** read/lookup and delete actions inside workflows, and connections to external databases.
 

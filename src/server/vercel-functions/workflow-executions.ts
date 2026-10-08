@@ -6,6 +6,7 @@ import { connections, credentials, executions, executionLogs, workflowNodes, wor
 import { getRequestUser } from '../../server/auth/request-user';
 import { isSameOriginRequest, jsonResponse, parseJsonBody } from '../../server/auth/http';
 import { createOwnerEmailNotifier } from '../../server/notifications/owner-email';
+import { createOwnerDataStore } from '../../server/data/owner-data-store';
 import { executeWorkflowGraph } from '../../server/execution/engine';
 import { summarizeTriggerInput } from '../../server/execution/logging';
 import { isAIProviderId } from '../../types/ai';
@@ -117,7 +118,7 @@ export default async function workflowExecutions(request: Request, context: Cont
     });
 
     const sendEmail = createOwnerEmailNotifier(user.id);
-    const result = await executeWorkflowGraph(parsedGraph.data, triggerInput, { resolveAIProvider, ...(sendEmail ? { sendEmail } : {}) });
+    const result = await executeWorkflowGraph(parsedGraph.data, triggerInput, { resolveAIProvider, dataStore: createOwnerDataStore(user.id), ...(sendEmail ? { sendEmail } : {}) });
     if (result.logs.length > 0) {
       await db.insert(executionLogs).values(
         result.logs.map((log) => ({

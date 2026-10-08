@@ -1,6 +1,7 @@
 import type { NodeCategory } from '../../types/workflow';
 import { AIProviderError } from '../ai/errors';
 import { EmailNotificationError } from '../notifications/email';
+import { DataRecordError } from '../data/records';
 
 export interface SafeExecutionLog {
   nodeId: string;
@@ -22,6 +23,9 @@ export function summarizeNodeInput(category: NodeCategory): Record<string, unkno
 export function summarizeNodeOutput(category: NodeCategory, output: unknown): Record<string, unknown> {
   if (category === 'manual_trigger') return { started: true };
   if (category === 'send_email') return { sent: true };
+  // Record keys and data may be personal; log only the action outcome.
+  if (category === 'create_db_record') return { created: true };
+  if (category === 'update_db_record') return { updated: true };
   if ((category === 'gemini_ai' || category.startsWith('ai_')) && typeof output === 'object' && output !== null) {
     const result = output as { result?: unknown; model?: unknown; usage?: unknown };
     const serialized = typeof result.result === 'string' ? result.result : JSON.stringify(result.result);
@@ -59,6 +63,6 @@ export function summarizeNodeOutput(category: NodeCategory, output: unknown): Re
 
 export function safeExecutionError(error: unknown): string {
   // Never persist exception text, stack traces, user data, URLs, or external response bodies.
-  if (error instanceof AIProviderError || error instanceof EmailNotificationError) return error.message;
+  if (error instanceof AIProviderError || error instanceof EmailNotificationError || error instanceof DataRecordError) return error.message;
   return 'Node execution failed. Check the node configuration and try again.';
 }

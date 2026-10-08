@@ -10,6 +10,7 @@ import {
   ExecutionsPage,
   AIProvidersPage,
   IntegrationsPage,
+  DataPage,
   SettingsPage,
   WorkflowEditorPage,
 } from "@/pages";
@@ -31,6 +32,7 @@ export default function App() {
             <Route path="executions" element={<ExecutionsPage />} />
             <Route path="ai-providers" element={<AIProvidersPage />} />
             <Route path="integrations" element={<IntegrationsPage />} />
+            <Route path="data" element={<DataPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>

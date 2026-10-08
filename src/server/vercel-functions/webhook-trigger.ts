@@ -5,6 +5,7 @@ import { connections, executions, executionLogs, workflowNodes, workflows } from
 import { findOwnedAICredential } from '../../server/ai/owned-credential-lookup';
 import { createOwnerAIProviderResolver } from '../../server/ai/provider-resolver';
 import { createOwnerEmailNotifier } from '../../server/notifications/owner-email';
+import { createOwnerDataStore } from '../../server/data/owner-data-store';
 import { executeWorkflowGraph } from '../../server/execution/engine';
 import { handleWebhookRequest } from '../../server/workflows/webhook-trigger-core';
 import type { WorkflowGraphInput } from '../../server/workflows/graph-validation';
@@ -101,5 +102,5 @@ async function executeWorkflowGraphWithOwner(
 ) {
   const resolveAIProvider = createOwnerAIProviderResolver(ownerId, findOwnedAICredential);
   const sendEmail = createOwnerEmailNotifier(ownerId);
-  return executeWorkflowGraph(graph, input, { triggerCategory: 'webhook_trigger', resolveAIProvider, ...(sendEmail ? { sendEmail } : {}) });
+  return executeWorkflowGraph(graph, input, { triggerCategory: 'webhook_trigger', resolveAIProvider, dataStore: createOwnerDataStore(ownerId), ...(sendEmail ? { sendEmail } : {}) });
 }

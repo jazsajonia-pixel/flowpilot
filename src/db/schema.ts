@@ -228,3 +228,26 @@ export const credentials = pgTable(
     }).onDelete('cascade'),
   ],
 );
+
+/**
+ * Owner-private JSON records written by Create/Update Database Record actions.
+ * Records are keyed by (owner, collection, record_key) and never shared across accounts.
+ */
+export const dataRecords = pgTable(
+  'data_records',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    collection: varchar('collection', { length: 64 }).notNull(),
+    recordKey: varchar('record_key', { length: 128 }).notNull(),
+    data: jsonb('data').$type<Record<string, unknown>>().notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('data_records_owner_collection_key_unique').on(table.ownerId, table.collection, table.recordKey),
+    index('data_records_owner_collection_updated_idx').on(table.ownerId, table.collection, table.updatedAt),
+  ],
+);

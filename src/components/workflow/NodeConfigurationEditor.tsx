@@ -155,6 +155,45 @@ export function NodeConfigurationEditor({ node, onChange, credentials = [] }: No
     );
   }
 
+  if (node.data.category === 'create_db_record' || node.data.category === 'update_db_record') {
+    const isUpdate = node.data.category === 'update_db_record';
+    return (
+      <div className="space-y-3">
+        <label className="block space-y-1.5 text-xs font-medium">
+          Collection
+          <Input value={textField('collection')} maxLength={64} placeholder="leads" onChange={(event) => update('collection', event.target.value.toLowerCase())} />
+        </label>
+        <label className="block space-y-1.5 text-xs font-medium">
+          Record key{isUpdate ? '' : ' (optional)'}
+          <Input value={textField('key')} maxLength={512} placeholder={isUpdate ? '{{trigger.email}}' : 'Leave blank for a random ID'} onChange={(event) => update('key', event.target.value)} />
+        </label>
+        {isUpdate && (
+          <label className="block space-y-1.5 text-xs font-medium">
+            Update mode
+            <select value={config.mode === 'replace' ? 'replace' : 'merge'} onChange={(event) => update('mode', event.target.value)} className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+              <option value="merge">Merge fields into the existing record</option>
+              <option value="replace">Replace the whole record</option>
+            </select>
+          </label>
+        )}
+        <label className="block space-y-1.5 text-xs font-medium">
+          Data (JSON object)
+          <textarea
+            value={textField('data')}
+            maxLength={32_768}
+            rows={6}
+            placeholder={'{"name": "{{trigger.name}}", "status": "new"}'}
+            onChange={(event) => update('data', event.target.value)}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs"
+          />
+        </label>
+        <p className="rounded-lg border bg-muted/40 p-3 text-[11px] leading-5 text-muted-foreground">
+          Records are private to your account and stored in FlowPilot. {isUpdate ? 'The run fails if the key does not exist.' : 'The run fails if the key already exists.'} Limits: 16 KiB per record, 1,000 records per account, 10 writes per run. Later steps can use <code>{'{{steps.NODE_ID.key}}'}</code>. View records on the Data page.
+        </p>
+      </div>
+    );
+  }
+
   if (node.data.category === 'send_email') {
     return (
       <div className="space-y-3">
