@@ -63,7 +63,7 @@ FlowPilot AI
 - **Visual Graph Editor:** `@xyflow/react` (React Flow) for interactive node connection, drag-and-drop workflow construction, and node inspection.
 
 ### 2.2 API & Serverless Backend
-- **Platform:** Vercel. `api/[[...path]].ts` is a single Node serverless function that loads `server-build/dispatcher.mjs`, an esbuild bundle of `vercel/dispatcher.ts`; the dispatcher routes `/api/*` paths to handlers in `src/server/vercel-functions/`. The `netlify/functions/` files are legacy entry points kept for reference. A once-daily Vercel Cron job calls `/api/internal/schedule-tick` (see [`schedule-trigger.md`](schedule-trigger.md)).
+- **Platform:** Vercel. `api/dispatch.ts` (all `/api/*` paths are rewritten to it in `vercel.json`) is a single Node serverless function that loads `server-build/dispatcher.mjs`, an esbuild bundle of `vercel/dispatcher.ts`; the dispatcher routes `/api/*` paths to handlers in `src/server/vercel-functions/`. The `netlify/functions/` files are legacy entry points kept for reference. A once-daily Vercel Cron job calls `/api/internal/schedule-tick` (see [`schedule-trigger.md`](schedule-trigger.md)).
 - **Validation:** Server-side request parsing and validation using Zod.
 - **Security:** Phase 2C establishes server-side email/password authentication and revocable cookie sessions. Phases 2D and 3 protect workflow metadata and graph endpoints with owner-scoped queries. Phase 4 requires the same owner check to create executions and limits outbound requests to public HTTPS. Phase 6 adds encrypted user credentials and session-owner checks before any server-side decryption. Public endpoint abuse controls and per-user provider quotas remain later work. Node 22 is pinned through `.nvmrc`.
 
