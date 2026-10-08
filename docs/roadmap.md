@@ -79,7 +79,7 @@ This document outlines the sequential phases for building FlowPilot AI.
 ### Phase 9: Security, Testing & Production Hardening
 - Audit and verify the Phase 6 key-encryption design; add rate limiting and production security review.
 - Write unit tests for workflow engine execution and Zod validation schemas.
-- Set up automated CI/CD checks for GitHub Actions and Vercel deployment.
+- Set up automated CI/CD checks for GitHub Actions and Vercel deployment. *(GitHub Actions CI for type check, tests, build, and migration drift, plus Dependabot, complete; see `docs/ci.md`.)*
 
 ### Phase 10: Final UI/UX & Portfolio Polish
 - Refine dashboard analytics, template gallery, and visual aesthetics.
