@@ -9,6 +9,8 @@ import { safeExecutionError, summarizeNodeInput, summarizeNodeOutput, type SafeE
 import { OutboundRequestError, sendPublicHttpsRequest, type OutboundHttpResult } from './outbound-http';
 import { resolveTemplate, type ExecutionContext } from './templates';
 import { EmailNotificationError, type OwnerEmailSender } from '../notifications/email';
+import { randomUUID } from 'node:crypto';
+import { DataRecordError, validateCollection, validateRecordData, validateRecordKey, type OwnerDataStore } from '../data/records';
 
 const MAX_GRAPH_NODES = 50;
 const MAX_EXECUTED_NODES = 25;
@@ -43,6 +45,8 @@ export interface WorkflowExecutionOptions {
   resolveAIProvider?: AIProviderResolver;
   /** Owner-only email sender; when absent, Send Email nodes fail closed. */
   sendEmail?: OwnerEmailSender;
+  /** Owner-bound record store; when absent, database record nodes fail closed. */
+  dataStore?: OwnerDataStore;
   now?: () => number;
 }
 
@@ -201,6 +205,17 @@ function renderAIText(template: string, context: ExecutionContext): string {
   return text;
 }
 
+function resolveJsonObject(template: unknown, context: ExecutionContext): unknown {
+  if (typeof template !== 'string' || template.trim() === '') throw new DataRecordError('Record data must be a JSON object up to 16 KiB.');
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(template);
+  } catch {
+    throw new DataRecordError('Record data must be a JSON object up to 16 KiB.');
+  }
+  return resolveTemplate(parsed, context);
+}
+
 function renderTemplateText(template: string, context: ExecutionContext): string {
   const resolved = resolveTemplate(template, context);
   if (typeof resolved === 'string') return resolved;
@@ -338,6 +353,25 @@ async function runNode(
   if (node.category === 'filter') return applyFilter(node, context);
   if (node.category === 'gemini_ai' || node.category.startsWith('ai_')) {
     return runAINode(node, context, executionOptions, remainingMs);
+  }
+
+  if (node.category === 'create_db_record' || node.category === 'update_db_record') {
+    if (!executionOptions.dataStore) throw new DataRecordError('Database records are not available for this run.');
+    const collection = validateCollection(node.config.collection);
+    const data = validateRecordData(resolveJsonObject(node.config.data, context));
+    if (node.category === 'create_db_record') {
+      const keyTemplate = optionalString(node.config, 'key');
+      const key = keyTemplate?.trim() ? validateRecordKey(resolveTemplate(keyTemplate, context)) : randomUUID();
+      const outcome = await executionOptions.dataStore.create(collection, key, data);
+      if (outcome === 'exists') throw new DataRecordError('A record with this key already exists.');
+      if (outcome === 'limit') throw new DataRecordError('Record limit reached for this account.');
+      return { collection, key, created: true };
+    }
+    const key = validateRecordKey(resolveTemplate(requireString(node.config, 'key'), context));
+    const mode = node.config.mode === 'replace' ? 'replace' : 'merge';
+    const updated = await executionOptions.dataStore.update(collection, key, data, mode);
+    if (!updated) throw new DataRecordError('Record not found.');
+    return { collection, key, updated: true };
   }
 
   if (node.category === 'send_email') {

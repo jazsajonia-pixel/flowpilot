@@ -67,10 +67,10 @@ This document outlines the sequential phases for building FlowPilot AI.
 - Keep arbitrary custom endpoints disabled until credentialed outbound requests receive a separate SSRF, DNS-pinning, and credential-exfiltration review; custom provider adapters remain a code-level extension point.
 - Validate with deterministic tests only; do not make live provider calls or deploy during implementation.
 
-### Phase 7: Automation Integrations & Triggers (IN PROGRESS)
+### Phase 7: Automation Integrations & Triggers (COMPLETE)
 - Implement Webhook Trigger endpoint receiver with dynamic path routing. *(Initial bounded slice complete.)*
 - Implement Schedule / Cron Trigger system. *(Hobby-compatible daily/weekly UTC slice complete; see `docs/schedule-trigger.md`.)*
-- Build Email notification action nodes and database CRUD action nodes. *(Owner-only Send Email action complete; database CRUD actions next.)*
+- Build Email notification action nodes and database CRUD action nodes. *(Owner-only Send Email action and owner-private Create/Update Database Record actions complete.)*
 
 ### Phase 8: Execution Monitoring, Logs & Reliability
 - Build real-time Execution History and Detailed Log Inspector in Frontend.

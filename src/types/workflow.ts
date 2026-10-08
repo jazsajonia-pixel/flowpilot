@@ -45,8 +45,8 @@ export const NODE_CATALOG: readonly WorkflowNodeDefinition[] = [
   { type: 'logic', category: 'delay', label: 'Delay', description: 'Pause before the next step.' },
   { type: 'action', category: 'send_email', label: 'Send Email', description: 'Email yourself a notification.' },
   { type: 'action', category: 'http_request', label: 'HTTP Request', description: 'Call an external HTTP endpoint.' },
-  { type: 'action', category: 'create_db_record', label: 'Create Database Record', description: 'Create a record in a connected database.' },
-  { type: 'action', category: 'update_db_record', label: 'Update Database Record', description: 'Update a record in a connected database.' },
+  { type: 'action', category: 'create_db_record', label: 'Create Database Record', description: 'Save a JSON record to your private FlowPilot data.' },
+  { type: 'action', category: 'update_db_record', label: 'Update Database Record', description: 'Update a saved JSON record by key.' },
   { type: 'action', category: 'webhook_action', label: 'Webhook Action', description: 'Send an outgoing webhook.' },
 ];
 

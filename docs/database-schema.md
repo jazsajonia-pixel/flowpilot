@@ -17,6 +17,7 @@ Phase 2B adds relational structure only. It does **not** implement authenticatio
 | `executions` | Workflow run records | References a workflow; execution status is constrained to `pending`, `running`, `completed`, or `failed`; trigger data is JSONB. `scheduled_at` (nullable `timestamptz`) records the UTC-midnight slot of a Schedule Trigger run; the unique index `executions_workflow_scheduled_at_unique (workflow_id, scheduled_at)` permits one scheduled run per workflow per slot (NULLs never conflict). |
 | `execution_logs` | Per-node execution history | References an execution; stores the historical node ID without a node foreign key so workflow edits do not invalidate old logs. Input/output data is JSONB. |
 | `integrations` | A user's external integration metadata | References `users`; provider, display name, status, and non-secret JSONB settings. |
+| `data_records` | Owner-private JSON records written by workflow record actions | References `users` (cascade); unique `(owner_id, collection, record_key)`; `data` is JSONB up to 16 KiB enforced by the application. |
 | `credentials` | Opaque secret payload storage | References `users` and optionally an integration owned by the same user; secret material belongs only in `encrypted_payload`. |
 
 All primary keys are PostgreSQL UUIDs. Timestamps use `timestamptz`. JSONB is used for node positions/configuration, integration settings, trigger input, and execution log payloads where the contents are naturally structured and may evolve.
@@ -48,4 +49,4 @@ Check migration consistency with:
 npx drizzle-kit check
 ```
 
-These commands generate and inspect SQL locally. Applying a migration is a separate deployment step: apply it to **both** Neon projects (`flowpilot-staging` for Preview and `flowpilot-production`) before deploying code that depends on it. Migrations live under `netlify/database/migrations/` for historical reasons; the path is unrelated to hosting. `0003_schedule_run_idempotency` adds `executions.scheduled_at` and its unique index.
+These commands generate and inspect SQL locally. Applying a migration is a separate deployment step: apply it to **both** Neon projects (`flowpilot-staging` for Preview and `flowpilot-production`) before deploying code that depends on it. Migrations live under `netlify/database/migrations/` for historical reasons; the path is unrelated to hosting. `0003_schedule_run_idempotency` adds `executions.scheduled_at` and its unique index. `0004_owner_data_records` adds `data_records`.

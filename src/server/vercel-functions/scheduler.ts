@@ -4,6 +4,7 @@ import { connections, executions, executionLogs, workflowNodes, workflows } from
 import { findOwnedAICredential } from '../../server/ai/owned-credential-lookup';
 import { createOwnerAIProviderResolver } from '../../server/ai/provider-resolver';
 import { createOwnerEmailNotifier } from '../../server/notifications/owner-email';
+import { createOwnerDataStore } from '../../server/data/owner-data-store';
 import { executeWorkflowGraph } from '../../server/execution/engine';
 import { handleScheduleTick, type ScheduleExecutionStore } from '../../server/workflows/schedule-trigger-core';
 
@@ -101,6 +102,7 @@ export default async function scheduler(request: Request): Promise<Response> {
       return executeWorkflowGraph(graph, input, {
         triggerCategory: 'schedule_trigger',
         resolveAIProvider: createOwnerAIProviderResolver(ownerId, findOwnedAICredential),
+        dataStore: createOwnerDataStore(ownerId),
         ...(sendEmail ? { sendEmail } : {}),
       });
     },

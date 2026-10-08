@@ -4,6 +4,7 @@ import { NODE_CATALOG, NODE_TYPE_BY_CATEGORY, type NodeCategory } from '../../ty
 import { isAIModelForProvider } from '../../types/ai';
 import { isOpenAIStrictJsonSchema, parseResponseJsonSchema } from '../ai/json-schema';
 import { scheduleTriggerDraftConfigSchema } from './schedule-config';
+import { COLLECTION_NAME_PATTERN } from '../data/records';
 import { workflowIdSchema } from './validation';
 
 const nodeTypes = ['trigger', 'ai', 'logic', 'action'] as const;
@@ -69,6 +70,12 @@ const sendEmailConfigSchema = z
     body: z.string().max(16_384).optional(),
   })
   .strict();
+
+const recordCollectionSchema = z.string().max(64).refine((value) => value === '' || COLLECTION_NAME_PATTERN.test(value), 'Collection names use lowercase letters, numbers, hyphens, or underscores.');
+const createRecordConfigSchema = z
+  .object({ collection: recordCollectionSchema.optional(), key: z.string().max(512).optional(), data: z.string().max(32_768).optional() })
+  .strict();
+const updateRecordConfigSchema = createRecordConfigSchema.extend({ mode: z.enum(['merge', 'replace']).optional() }).strict();
 
 const aiCommonConfigSchema = z.object({
   prompt: z.string().max(16_384).optional(),
@@ -159,8 +166,8 @@ const configSchemaByCategory: Record<NodeCategory, z.ZodTypeAny> = {
   delay: emptyConfigSchema,
   send_email: sendEmailConfigSchema,
   http_request: httpRequestConfigSchema,
-  create_db_record: emptyConfigSchema,
-  update_db_record: emptyConfigSchema,
+  create_db_record: createRecordConfigSchema,
+  update_db_record: updateRecordConfigSchema,
   webhook_action: webhookActionConfigSchema,
 };
 

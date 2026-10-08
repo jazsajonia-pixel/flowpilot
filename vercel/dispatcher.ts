@@ -15,6 +15,7 @@ import workflowGraph from '../src/server/vercel-functions/workflow-graph';
 import workflowExecutions from '../src/server/vercel-functions/workflow-executions';
 import webhookTrigger from '../src/server/vercel-functions/webhook-trigger';
 import scheduler from '../src/server/vercel-functions/scheduler';
+import dataRecords from '../src/server/vercel-functions/data-records';
 
 type WebHandler = (request: Request, context?: { params: Record<string, string> }) => Promise<Response>;
 type LegacyHandler = () => Promise<{ statusCode: number; headers?: Record<string, string>; body?: string }>;
@@ -32,6 +33,7 @@ const routeTable: Array<{ match: RegExp; module: RouteModule; params?: (match: R
   { match: /^\/api\/workflows\/([^/]+)\/executions\/?$/, module: { default: workflowExecutions }, params: (match) => ({ workflowId: match[1] }) },
   { match: /^\/api\/workflows\/([^/]+)\/?$/, module: { default: workflow }, params: (match) => ({ workflowId: match[1] }) },
   { match: /^\/api\/hooks\/([^/]+)\/?$/, module: { default: webhookTrigger }, params: (match) => ({ webhookToken: match[1] }) },
+  { match: /^\/api\/data-records\/?$/, module: { default: dataRecords } },
   { match: /^\/api\/internal\/schedule-tick\/?$/, module: { default: scheduler } },
   { match: /^\/api\/health\/?$/, module: { handler: health } },
   { match: /^\/api\/db-health\/?$/, module: { handler: dbHealth } },
