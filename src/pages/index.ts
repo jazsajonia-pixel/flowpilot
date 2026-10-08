@@ -7,3 +7,4 @@ export * from "./AIProvidersPage";
 export * from "./IntegrationsPage";
 export * from "./SettingsPage";
 export * from "./DataPage";
+export * from "./ExecutionDetailPage";

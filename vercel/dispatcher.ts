@@ -16,6 +16,7 @@ import workflowExecutions from '../src/server/vercel-functions/workflow-executio
 import webhookTrigger from '../src/server/vercel-functions/webhook-trigger';
 import scheduler from '../src/server/vercel-functions/scheduler';
 import dataRecords from '../src/server/vercel-functions/data-records';
+import { getExecution, listExecutions } from '../src/server/vercel-functions/executions';
 
 type WebHandler = (request: Request, context?: { params: Record<string, string> }) => Promise<Response>;
 type LegacyHandler = () => Promise<{ statusCode: number; headers?: Record<string, string>; body?: string }>;
@@ -33,6 +34,8 @@ const routeTable: Array<{ match: RegExp; module: RouteModule; params?: (match: R
   { match: /^\/api\/workflows\/([^/]+)\/executions\/?$/, module: { default: workflowExecutions }, params: (match) => ({ workflowId: match[1] }) },
   { match: /^\/api\/workflows\/([^/]+)\/?$/, module: { default: workflow }, params: (match) => ({ workflowId: match[1] }) },
   { match: /^\/api\/hooks\/([^/]+)\/?$/, module: { default: webhookTrigger }, params: (match) => ({ webhookToken: match[1] }) },
+  { match: /^\/api\/executions\/?$/, module: { default: listExecutions } },
+  { match: /^\/api\/executions\/([^/]+)\/?$/, module: { default: getExecution }, params: (match) => ({ executionId: match[1] }) },
   { match: /^\/api\/data-records\/?$/, module: { default: dataRecords } },
   { match: /^\/api\/internal\/schedule-tick\/?$/, module: { default: scheduler } },
   { match: /^\/api\/health\/?$/, module: { handler: health } },

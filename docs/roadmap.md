@@ -72,8 +72,8 @@ This document outlines the sequential phases for building FlowPilot AI.
 - Implement Schedule / Cron Trigger system. *(Hobby-compatible daily/weekly UTC slice complete; see `docs/schedule-trigger.md`.)*
 - Build Email notification action nodes and database CRUD action nodes. *(Owner-only Send Email action and owner-private Create/Update Database Record actions complete.)*
 
-### Phase 8: Execution Monitoring, Logs & Reliability
-- Build real-time Execution History and Detailed Log Inspector in Frontend.
+### Phase 8: Execution Monitoring, Logs & Reliability (IN PROGRESS)
+- Build real-time Execution History and Detailed Log Inspector in Frontend. *(Execution History list with status/workflow filters and paging, plus a per-run step log page, complete.)*
 - Implement retry mechanics, failure handling, and execution timeout protection in engine.
 
 ### Phase 9: Security, Testing & Production Hardening

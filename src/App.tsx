@@ -11,6 +11,7 @@ import {
   AIProvidersPage,
   IntegrationsPage,
   DataPage,
+  ExecutionDetailPage,
   SettingsPage,
   WorkflowEditorPage,
 } from "@/pages";
@@ -30,6 +31,7 @@ export default function App() {
             <Route path="workflows" element={<WorkflowsPage />} />
             <Route path="templates" element={<TemplatesPage />} />
             <Route path="executions" element={<ExecutionsPage />} />
+            <Route path="executions/:executionId" element={<ExecutionDetailPage />} />
             <Route path="ai-providers" element={<AIProvidersPage />} />
             <Route path="integrations" element={<IntegrationsPage />} />
             <Route path="data" element={<DataPage />} />

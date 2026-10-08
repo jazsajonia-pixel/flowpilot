@@ -14,6 +14,8 @@ Phase 2D introduced workflow metadata routes. Phase 3 adds graph read/write. Pha
 | `GET` | `/api/workflows/:workflowId/graph` | Read the owned workflow graph. | `200 { graph: { nodes, connections } }` |
 | `PUT` | `/api/workflows/:workflowId/graph` | Atomically replace an owned workflow graph (one `db.batch`). Deactivates an active workflow whose new graph can no longer be activated. | `200 { ok: true, deactivated }` |
 | `POST` | `/api/workflows/:workflowId/executions` | Start one synchronous manual run with `{ input?: { ... } }`. | `200 { execution: { id, workflowId, status, logs, ... } }` |
+| `GET` | `/api/executions?status=&workflowId=&cursor=` | Owner's runs across all workflows, newest first, 25 per page. Unknown or duplicate parameters return `400`. | `200 { executions, nextCursor }` |
+| `GET` | `/api/executions/:executionId` | One owned run with trigger summary and ordered step logs (up to 200). Other owners' runs return `404`. | `200 { execution }` |
 | `GET` | `/api/data-records` | List the owner's record collections, or with `?collection=` the latest 100 records. | `200 { collections }` / `200 { records }` |
 | `DELETE` | `/api/data-records?collection=&key=` | Delete one owned record (same-origin). | `200 { ok: true }` |
 | `GET` | `/api/internal/schedule-tick` | Vercel Cron target; requires `Authorization: Bearer $CRON_SECRET`. Not for browsers. | `200 { slot, considered, outcomes }` |
@@ -70,3 +72,8 @@ Webhook tokens and raw webhook payloads are never written to execution records, 
 ## Phase 7 schedule trigger
 
 Workflows whose single trigger is a Schedule Trigger (`{ frequency: 'daily' }` or `{ frequency: 'weekly', weekdays: [0-6...] }`, UTC) can be activated once their config is complete. A once-daily Vercel Cron job runs due workflows between 00:00 and 00:59 UTC; there is no time-of-day option on the Hobby plan, and missed runs are not retried. Activation returns `409` when 25 scheduled workflows are already active. See [`schedule-trigger.md`](schedule-trigger.md) for the request flow, idempotency, and operations.
+
+## Execution history
+
+`GET /api/executions` returns summaries with `status`, `trigger` (`manual`, `webhook`, `schedule`, or `unknown`, derived from the trigger step's log and `scheduled_at`), `durationMs`, step counts, and `interrupted`. A run is `interrupted` when it is still `pending`/`running` more than 5 minutes after creation; functions are capped at 60 seconds, so it cannot still be alive. Paging uses an opaque `cursor` encoding `(created_at, id)` and a keyset comparison, so new runs never shift pages. The detail endpoint labels steps with their current node label, falling back to the node-type label (`nodeExists: false`) when the step was since deleted. Only the safe log summaries already stored by the engine are returned; raw payloads, prompts, emails, and record data are never stored and never exposed.
+
