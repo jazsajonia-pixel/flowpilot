@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Readable } from 'node:stream';
+import { resolveRequestUrl } from './request-url';
 import { handler as health } from '../src/server/vercel-functions/health';
 import { handler as dbHealth } from '../src/server/vercel-functions/db-health';
 import authLogin from '../src/server/vercel-functions/auth-login';
@@ -43,7 +44,7 @@ function copyHeaders(response: Response, target: VercelResponse) {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const protocol = req.headers['x-forwarded-proto'] ?? 'https';
   const host = req.headers.host ?? 'localhost';
-  const url = new URL(req.url ?? '/', `${protocol}://${host}`);
+  const url = resolveRequestUrl(req.url ?? '/', `${protocol}://${host}`);
   const route = routeTable.find((candidate) => candidate.match.test(url.pathname));
 
   if (!route) {

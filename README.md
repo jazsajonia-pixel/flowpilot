@@ -56,7 +56,7 @@ Condition (IF Priority == "High")
 ### Backend & API
 - **Runtime:** Node.js with TypeScript
 - **API Architecture:** RESTful Endpoints
-- **Hosting:** Vercel (static Vite build + one bundled Node serverless API function, `api/[[...path]].ts`)
+- **Hosting:** Vercel (static Vite build + one bundled Node serverless API function, `api/dispatch.ts` (all `/api/*` paths are rewritten to it in `vercel.json`))
 - **Scheduling:** One once-daily Vercel Cron job (Hobby plan: starts 00:00–00:59 UTC) — see [`docs/schedule-trigger.md`](docs/schedule-trigger.md)
 
 ### Database Layer
@@ -177,7 +177,7 @@ npm test
 # Run Vite dev server
 npm run dev
 
-# API routes (including /api/auth/*) are served by the Vercel function in api/[[...path]].ts,
+# API routes (including /api/auth/*) are served by the Vercel function in api/dispatch.ts,
 # which loads server-build/dispatcher.mjs produced by `npm run build`.
 # Run them locally with `vercel dev` when the Vercel CLI is available/configured.
 
