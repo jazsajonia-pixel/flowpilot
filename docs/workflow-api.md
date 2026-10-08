@@ -16,6 +16,7 @@ Phase 2D introduced workflow metadata routes. Phase 3 adds graph read/write. Pha
 | `POST` | `/api/workflows/:workflowId/executions` | Start one synchronous manual run with `{ input?: { ... } }`. | `200 { execution: { id, workflowId, status, logs, ... } }` |
 | `GET` | `/api/executions?status=&workflowId=&cursor=` | Owner's runs across all workflows, newest first, 25 per page. Unknown or duplicate parameters return `400`. | `200 { executions, nextCursor }` |
 | `GET` | `/api/executions/:executionId` | One owned run with trigger summary and ordered step logs (up to 200). Other owners' runs return `404`. | `200 { execution }` |
+| `POST` | `/api/executions/:executionId/retry` | Replay one owned failed or interrupted run against the current saved graph (same-origin). Each run can be retried once. | `200 { execution }`, `409` when not replayable or already retried |
 | `GET` | `/api/data-records` | List the owner's record collections, or with `?collection=` the latest 100 records. | `200 { collections }` / `200 { records }` |
 | `DELETE` | `/api/data-records?collection=&key=` | Delete one owned record (same-origin). | `200 { ok: true }` |
 | `GET` | `/api/internal/schedule-tick` | Vercel Cron target; requires `Authorization: Bearer $CRON_SECRET`. Not for browsers. | `200 { slot, considered, outcomes }` |

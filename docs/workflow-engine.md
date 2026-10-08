@@ -79,3 +79,18 @@ Create/Update Database Record nodes write to FlowPilot's own `data_records` tabl
 - **Viewing:** `GET /api/data-records` lists the owner's collections, `GET /api/data-records?collection=name` returns the latest 100 records, and `DELETE /api/data-records?collection=name&key=k` deletes one record (same-origin only). The Data page in the app uses these routes.
 - **Not yet:** read/lookup and delete actions inside workflows, and connections to external databases.
 
+## Retries
+
+**Automatic (inside a run).** A failed step gets at most one more attempt, after a 400 ms pause, with at most 3 retries per run, and only while at least 1.5 s of the 8 s run budget remains. Failures are classified by status code or failure type, never by message text:
+
+| Step | Retried on | Never retried on |
+| --- | --- | --- |
+| AI (Gemini/OpenAI) | HTTP 408/429/500/502/503/504 or a dropped connection | Bad key or model, 4xx, timeouts (budget spent), invalid JSON output |
+| HTTP Request, GET/PUT/DELETE | 408/429/500/502/503/504, timeouts, dropped connections | Other 4xx, blocked destinations, redirects, size limits |
+| HTTP Request POST/PATCH, Webhook Action | 429 and 503 only (the server did not process the request) | 502/504, timeouts, and dropped connections, because the request may already have taken effect |
+| Send Email, database records, logic | Never | — |
+
+A step that needed a retry logs `attempts: 2` in its output summary.
+
+**Manual (Retry button).** `POST /api/executions/:id/retry` replays a failed or interrupted run against the workflow's current saved graph. Raw manual and webhook inputs are never stored, so only runs that received no input can be replayed; scheduled runs replay their slot time and frequency. The new run stores `retryOf` in `trigger_data`. A single conditional `INSERT` allows one retry per run, so double taps cannot start two. Retrying an interrupted run also marks the original as failed.
+

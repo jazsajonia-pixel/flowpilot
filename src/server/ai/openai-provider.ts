@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import { isAIModelForProvider, type AIProvider, type AIPromptInput, type AIProviderResponse } from '../../types/ai';
 import { isOpenAIStrictJsonSchema } from './json-schema';
-import { AIProviderError } from './errors';
+import { AIProviderError, isTransientProviderFailure } from './errors';
 
 const DEFAULT_MODEL = 'gpt-6-luna';
 const MAX_PROMPT_CHARACTERS = 16_384;
@@ -128,9 +128,10 @@ export class OpenAIProvider implements AIProvider {
     let response: OpenAIResult;
     try {
       response = await client.responses.create(request, { signal: input.abortSignal });
-    } catch {
-      if (input.abortSignal?.aborted) throw new AIProviderError('The AI request timed out.');
-      throw new AIProviderError('The AI provider request failed.');
+    } catch (error) {
+      const aborted = input.abortSignal?.aborted === true;
+      if (aborted) throw new AIProviderError('The AI request timed out.');
+      throw new AIProviderError('The AI provider request failed.', { retryable: isTransientProviderFailure(error, aborted) });
     }
 
     const text = response.output_text;

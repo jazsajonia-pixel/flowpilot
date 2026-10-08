@@ -7,6 +7,7 @@ import type { AIProviderResolver } from '../ai/provider-resolver';
 import { parseResponseJsonSchema, parseStructuredJsonResponse } from '../ai/json-schema';
 import { safeExecutionError, summarizeNodeInput, summarizeNodeOutput, type SafeExecutionLog } from './logging';
 import { OutboundRequestError, sendPublicHttpsRequest, type OutboundHttpResult } from './outbound-http';
+import { AIProviderError } from '../ai/errors';
 import { resolveTemplate, type ExecutionContext } from './templates';
 import { EmailNotificationError, type OwnerEmailSender } from '../notifications/email';
 import { randomUUID } from 'node:crypto';
@@ -17,6 +18,12 @@ const MAX_EXECUTED_NODES = 25;
 const DEFAULT_EXECUTION_BUDGET_MS = 8_000;
 const MAX_AI_REQUEST_MS = 6_000;
 const MAX_AI_INPUT_CHARACTERS = 16_384;
+/** Automatic retry policy: one extra attempt per step, at most 3 per run, only when time remains. */
+export const MAX_RETRIES_PER_RUN = 3;
+export const RETRY_BACKOFF_MS = 400;
+export const MIN_RETRY_REMAINING_MS = 1_500;
+const ALWAYS_RETRYABLE_HTTP = new Set([429, 503]);
+const IDEMPOTENT_RETRYABLE_HTTP = new Set([408, 429, 500, 502, 503, 504]);
 
 const TRIGGER_LABELS = { manual_trigger: 'Manual', webhook_trigger: 'Webhook', schedule_trigger: 'Schedule' } as const;
 
@@ -48,6 +55,8 @@ export interface WorkflowExecutionOptions {
   /** Owner-bound record store; when absent, database record nodes fail closed. */
   dataStore?: OwnerDataStore;
   now?: () => number;
+  /** Injectable delay for retry backoff (tests). */
+  sleep?: (ms: number) => Promise<void>;
 }
 
 class WorkflowNodeError extends Error {
@@ -401,6 +410,34 @@ async function runNode(
   throw new WorkflowNodeError('This node is not supported by the current execution engine.');
 }
 
+function httpMethodOf(node: WorkflowNode): string {
+  if (node.category === 'webhook_action') return 'POST';
+  return typeof node.config.method === 'string' ? node.config.method : 'GET';
+}
+
+/**
+ * Decide whether a failed step may be attempted once more. AI calls retry on transient
+ * provider failures. HTTP steps retry on 429/503 (the server did not process the request);
+ * idempotent methods (GET, PUT, DELETE) also retry on other 5xx/408, timeouts, and dropped
+ * connections. POST/PATCH never retry on ambiguous failures, to avoid duplicate side effects.
+ * Email, database, and validation failures never retry.
+ */
+export function isRetryableStepFailure(node: WorkflowNode, error: unknown): boolean {
+  if (node.category === 'gemini_ai' || node.category.startsWith('ai_')) {
+    return error instanceof AIProviderError && error.retryable;
+  }
+  if ((node.category === 'http_request' || node.category === 'webhook_action') && error instanceof OutboundRequestError) {
+    const idempotent = ['GET', 'PUT', 'DELETE'].includes(httpMethodOf(node));
+    if (error.kind === 'http_status' && error.status !== null) {
+      return ALWAYS_RETRYABLE_HTTP.has(error.status) || (idempotent && IDEMPOTENT_RETRYABLE_HTTP.has(error.status));
+    }
+    return idempotent && (error.kind === 'timeout' || error.kind === 'connection');
+  }
+  return false;
+}
+
+const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
 export async function executeWorkflowGraph(
   graph: WorkflowGraphInput,
   triggerInput: Record<string, unknown>,
@@ -438,6 +475,8 @@ export async function executeWorkflowGraph(
   }
 
   let executedCount = 0;
+  let retriesUsed = 0;
+  const sleep = options.sleep ?? defaultSleep;
   let failure: string | undefined;
   for (const node of orderedNodes) {
     const incoming = incomingByTarget.get(node.id) ?? [];
@@ -455,16 +494,32 @@ export async function executeWorkflowGraph(
     }
 
     executedCount += 1;
+    let attempts = 0;
     try {
-      const remainingMs = deadline - now();
-      const output = await runNode(node, context, request, options, remainingMs);
+      let output: unknown;
+      for (;;) {
+        attempts += 1;
+        try {
+          output = await runNode(node, context, request, options, deadline - now());
+          break;
+        } catch (error) {
+          const canRetry = attempts === 1
+            && retriesUsed < MAX_RETRIES_PER_RUN
+            && deadline - now() > RETRY_BACKOFF_MS + MIN_RETRY_REMAINING_MS
+            && isRetryableStepFailure(node, error);
+          if (!canRetry) throw error;
+          retriesUsed += 1;
+          await sleep(RETRY_BACKOFF_MS);
+        }
+      }
       context.steps[node.id] = output;
+      const summary = summarizeNodeOutput(node.category, output);
       logs.push({
         nodeId: node.id,
         status: 'success',
         timestamp: new Date(now()).toISOString(),
         inputData: summarizeNodeInput(node.category),
-        outputData: summarizeNodeOutput(node.category, output),
+        outputData: attempts > 1 ? { ...summary, attempts } : summary,
       });
       const outgoing = outgoingBySource.get(node.id) ?? [];
       const conditionResult = node.category === 'condition' && typeof output === 'object' && output !== null
@@ -485,6 +540,7 @@ export async function executeWorkflowGraph(
         status: 'error',
         timestamp: new Date(now()).toISOString(),
         inputData: summarizeNodeInput(node.category),
+        ...(attempts > 1 ? { outputData: { attempts } } : {}),
         error: failure,
       });
       break;

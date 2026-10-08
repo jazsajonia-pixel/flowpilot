@@ -14,6 +14,7 @@ export interface ExecutionHistoryItem {
   completedAt: string | null;
   scheduledAt: string | null;
   durationMs: number | null;
+  retryOf: string | null;
   steps: { succeeded: number; failed: number; skipped: number };
 }
 
@@ -30,13 +31,15 @@ export interface ExecutionStepLog {
 
 export interface ExecutionDetail extends ExecutionHistoryItem {
   triggerData: unknown;
+  retriedBy: string | null;
+  retry: { allowed: boolean; reason: string | null };
   logs: ExecutionStepLog[];
 }
 
-async function request<T>(path: string): Promise<T> {
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(path, { credentials: 'same-origin', cache: 'no-store' });
+    response = await fetch(path, { credentials: 'same-origin', cache: 'no-store', ...init });
   } catch {
     throw new Error('Execution history is unavailable.');
   }
@@ -62,6 +65,13 @@ export async function listExecutionHistory(filters: { status?: ExecutionStatus; 
 
 export async function getExecutionDetail(executionId: string): Promise<ExecutionDetail> {
   return (await request<{ execution: ExecutionDetail }>(`/api/executions/${encodeURIComponent(executionId)}`)).execution;
+}
+
+export async function retryExecutionRun(executionId: string): Promise<{ id: string; status: ExecutionStatus; error: string | null }> {
+  return (await request<{ execution: { id: string; status: ExecutionStatus; error: string | null } }>(
+    `/api/executions/${encodeURIComponent(executionId)}/retry`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' },
+  )).execution;
 }
 
 export function formatDuration(ms: number | null): string {
