@@ -8,7 +8,9 @@ This document contains instructions and guidelines for AI coding agents (such as
 
 **FlowPilot AI** is an AI-powered workflow automation SaaS application.
 
-Users visually create automated workflows that connect triggers, AI processing, conditions, APIs, databases, notifications, and other actions. The application provides a modern, intuitive visual workflow editor built on top of React Flow, backed by a Node.js API, Netlify Database (PostgreSQL with Drizzle ORM), and Netlify Functions.
+Users visually create automated workflows that connect triggers, AI processing, conditions, APIs, databases, notifications, and other actions. The application provides a modern visual workflow editor built on React Flow, backed by a Vercel Node.js serverless API dispatcher and Neon PostgreSQL with Drizzle ORM.
+
+The production frontend is a Vite build on Vercel; `/api/*` routes are handled by the bundled dispatcher at `api/dispatch.ts`. Netlify-named function and migration paths remain as legacy repository artifacts, not as the current production runtime. Preserve them unless their safe removal is separately verified.
 
 ---
 
@@ -25,6 +27,7 @@ When contributing to FlowPilot AI, always adhere to these principles:
 - **Preserve Existing Functionality:** Always ensure existing features and tests remain fully functional when adding new code.
 - **Targeted Edits:** Do not rewrite or reformat unrelated files.
 - **Approved Stack Alignment:** Do not introduce technologies outside the approved architecture without explicit architectural justification and user approval.
+- **Neon HTTP Driver Limits:** The server uses `drizzle-orm/neon-http`; interactive transactions are unsupported. Use a single SQL statement or the established `db.batch` pattern for multi-statement operations, and verify the exact atomicity guarantees.
 
 ---
 
@@ -51,12 +54,12 @@ Security is paramount in FlowPilot AI. Every contribution must follow these secu
 - **No Secrets in Frontend:** Never expose secret API keys, master credentials, or service keys in client-side code.
 - **No Secrets in Source Control:** Never commit API keys, tokens, database URLs, or real credentials into Git.
 - **Ignore Local Environments:** `.env` and `.env.local` must remain in `.gitignore`. Always maintain `.env.example` with template values only.
-- **Server-side Credential Handling:** User-provided third-party API credentials (e.g., Gemini, OpenAI keys) must be processed and executed strictly on the server side (Netlify Functions / API layer).
-- **Encryption at Rest:** User API credentials stored in Netlify Database must be encrypted at rest.
+- **Server-side Credential Handling:** User-provided third-party API credentials (e.g., Gemini and OpenAI keys) must be processed and executed strictly on the server side through the Vercel dispatcher/API layer. Never expose them in client code, workflow graphs, responses, or logs.
+- **Encryption at Rest:** User AI credentials stored in Neon PostgreSQL must remain encrypted at rest using the existing server-side credential-vault design.
 - **API Request Validation:** All incoming API payloads must be validated on the server side using **Zod** schemas.
 - **Server-side Auth & Authorization:** Enforce authentication and authorization server-side on every protected API endpoint. Never rely on client-side state for access control.
 - **No Client Credential Exposure:** Never expose database connection strings or administrative credentials to client apps.
-- **Zero-Trust Client Data:** Never trust client-provided user IDs or ownership flags. Always verify workflow and resource ownership on the server using verified JWT/session user identities.
+- **Zero-Trust Client Data:** Never trust client-provided user IDs or ownership flags. Derive identity from the validated, active server-side session and verify resource ownership in each protected operation; do not assume the app uses JWTs.
 - **Credential Masking:** Always mask sensitive API credentials in UI views and logs (e.g., `sk-••••••••1234`). Never log full API keys or bearer tokens.
 
 ---
@@ -79,5 +82,5 @@ To ensure seamless management and deployment:
 - **Clear Documentation:** Maintain exhaustive, clear, and unambiguous project documentation.
 - **Reproducible Commands:** Provide exact, copy-pasteable CLI commands for builds, linting, and testing.
 - **Automated Verification:** The AI agent must run all linting, type-checking, and build verifications autonomously within its environment.
-- **Cloud Deployable Architecture:** Keep the application deployable cleanly via standard **GitHub → Netlify** CI/CD pipelines.
+- **Cloud Deployable Architecture:** Keep the application deployable through the current **GitHub Actions → Vercel** workflow with Neon configured per Vercel environment. Do not substitute Netlify as the production platform.
 - **Zero Local Desktop Assumption:** Never assume the maintainer has a local desktop environment to run debuggers or manual local setups. Make all deployment and verification steps completely transparent and autonomous.
