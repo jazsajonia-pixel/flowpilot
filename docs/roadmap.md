@@ -6,7 +6,7 @@ This is the **authoritative product roadmap** for FlowPilot. Update phase status
 
 ## Current status snapshot
 
-**Last verified:** 2026-10-10. **Current milestone:** Phase 8 — Execution Monitoring, Logs & Reliability (**in progress**). Latest `main` is `5c8058c` (PR #34, documentation only). The latest application-code commit is `614fdb8` (PR #33); its Vercel production deployment and read-only frontend, liveness, and Neon health checks succeeded.
+**Last verified:** 2026-10-10. **Current milestone:** Phase 8 — Execution Monitoring, Logs & Reliability (**in progress**). The last runtime-changing revision is `614fdb8` (PR #33); its Vercel production deployment and read-only frontend, liveness, and Neon health checks succeeded. PRs #34 and #35 were documentation-only and made no runtime changes.
 
 | Area | Verified status and known limit |
 |---|---|
