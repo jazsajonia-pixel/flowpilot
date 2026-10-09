@@ -31,9 +31,9 @@ export type UpdateMode = 'merge' | 'replace';
 
 export interface OwnerDataStore {
   /** Insert unless the key exists or the owner is at the record cap. */
-  create: (collection: string, key: string, data: Record<string, unknown>) => Promise<'created' | 'exists' | 'limit'>;
+  create: (collection: string, key: string, data: Record<string, unknown>, signal?: AbortSignal) => Promise<'created' | 'exists' | 'limit'>;
   /** Update an existing record; resolves false when it does not exist. */
-  update: (collection: string, key: string, data: Record<string, unknown>, mode: UpdateMode) => Promise<boolean>;
+  update: (collection: string, key: string, data: Record<string, unknown>, mode: UpdateMode, signal?: AbortSignal) => Promise<boolean>;
 }
 
 export function validateCollection(value: unknown): string {

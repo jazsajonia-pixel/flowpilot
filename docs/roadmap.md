@@ -74,7 +74,7 @@ This document outlines the sequential phases for building FlowPilot AI.
 
 ### Phase 8: Execution Monitoring, Logs & Reliability (IN PROGRESS)
 - Build real-time Execution History and Detailed Log Inspector in Frontend. *(Execution History list with status/workflow filters and paging, plus a per-run step log page, complete.)*
-- Implement retry mechanics, failure handling, and execution timeout protection in engine. *(Automatic transient-failure retries and a manual Retry for failed/interrupted runs complete; timeout protection for stuck runs next.)*
+- Implement retry mechanics, failure handling, and execution timeout protection in engine. *(Automatic transient-failure retries and a manual Retry for failed/interrupted runs complete. AI/HTTP/email calls and per-node Neon credential/record operations respect execution budgets; follow up on interruption/finalization if Vercel terminates a request during route-level persistence.)*
 
 ### Phase 9: Security, Testing & Production Hardening
 - Audit and verify the Phase 6 key-encryption design; add rate limiting and production security review.

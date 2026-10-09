@@ -313,13 +313,14 @@ async function runAINode(
   if (providerId === 'openai' && !credentialId) {
     throw new WorkflowNodeError('Select an OpenAI credential before running this node.');
   }
+  const abortSignal = AbortSignal.timeout(Math.max(1, Math.min(MAX_AI_REQUEST_MS, remainingMs)));
   let activeProvider: AIProvider;
   if (executionOptions.resolveAIProvider) {
     activeProvider = await executionOptions.resolveAIProvider({
       provider: providerId,
       ...(credentialId ? { credentialId } : {}),
       ...(model ? { model } : {}),
-    });
+    }, abortSignal);
   } else if (executionOptions.aiProvider && providerId === 'gemini' && !credentialId) {
     activeProvider = executionOptions.aiProvider;
   } else if (providerId === 'gemini' && !credentialId) {
@@ -327,7 +328,6 @@ async function runAINode(
   } else {
     throw new WorkflowNodeError('The selected AI provider credential is unavailable.');
   }
-  const abortSignal = AbortSignal.timeout(Math.max(1, Math.min(MAX_AI_REQUEST_MS, remainingMs)));
   const response = await activeProvider.generateCompletion({
     prompt,
     ...(systemInstruction ? { systemInstruction } : {}),
@@ -371,14 +371,16 @@ async function runNode(
     if (node.category === 'create_db_record') {
       const keyTemplate = optionalString(node.config, 'key');
       const key = keyTemplate?.trim() ? validateRecordKey(resolveTemplate(keyTemplate, context)) : randomUUID();
-      const outcome = await executionOptions.dataStore.create(collection, key, data);
+      const signal = AbortSignal.timeout(Math.max(1, remainingMs));
+      const outcome = await executionOptions.dataStore.create(collection, key, data, signal);
       if (outcome === 'exists') throw new DataRecordError('A record with this key already exists.');
       if (outcome === 'limit') throw new DataRecordError('Record limit reached for this account.');
       return { collection, key, created: true };
     }
     const key = validateRecordKey(resolveTemplate(requireString(node.config, 'key'), context));
     const mode = node.config.mode === 'replace' ? 'replace' : 'merge';
-    const updated = await executionOptions.dataStore.update(collection, key, data, mode);
+    const signal = AbortSignal.timeout(Math.max(1, remainingMs));
+    const updated = await executionOptions.dataStore.update(collection, key, data, mode, signal);
     if (!updated) throw new DataRecordError('Record not found.');
     return { collection, key, updated: true };
   }

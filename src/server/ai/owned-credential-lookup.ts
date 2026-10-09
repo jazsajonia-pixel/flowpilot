@@ -1,12 +1,13 @@
 import { and, eq } from 'drizzle-orm';
-import { db } from '../../db';
+import { db, getDbForSignal } from '../../db';
 import { credentials } from '../../db/schema';
 import { isAIProviderId } from '../../types/ai';
 import type { FindOwnedCredential } from './provider-resolver';
 
 /** Load an encrypted AI credential only when it belongs to the given owner and provider. */
-export const findOwnedAICredential: FindOwnedCredential = async (ownerId, credentialId, provider) => {
-  const [credential] = await db
+export const findOwnedAICredential: FindOwnedCredential = async (ownerId, credentialId, provider, signal) => {
+  const queryDb = signal ? getDbForSignal(signal) : db;
+  const [credential] = await queryDb
     .select({
       id: credentials.id,
       ownerId: credentials.ownerId,
