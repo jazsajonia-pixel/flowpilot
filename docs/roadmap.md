@@ -80,12 +80,13 @@ Implement manual, webhook, and daily scheduled triggers; owner-only email notifi
 
 ## Phase 8 — Execution monitoring, logs, and reliability (**in progress**)
 
-**Complete:** execution history with filters/paging, per-run detail and safe step logs, bounded transient retries, one manual retry for eligible failed/interrupted runs, engine limits, outbound/AI/email timeouts, and per-node cancellation signals for Neon credential and record operations.
+**Complete:** execution history with filters/paging, per-run detail and safe step logs, bounded transient retries, one manual retry for eligible failed/interrupted runs, engine limits, outbound/AI/email timeouts, per-node cancellation signals for Neon credential and record operations, and bounded result-log/status persistence across manual, webhook, scheduled, and retry runs.
 
 **Remaining work:**
-- Make pending/running state finalization and route-level persistence more resilient to Vercel invocation termination; test interrupted-run display, retry, and stale-state transitions.
+- Add durable recovery for hard Vercel invocation termination. History currently flags pending/running rows older than five minutes as interrupted and eligible runs can be retried; a platform kill can still leave the stored row running.
+- Keep result finalization bounded: logs and terminal status share a two-second database signal, with a separate one-second best-effort failure-status update. A client abort cannot guarantee a SQL request already accepted by Neon was rolled back.
 - Review idempotency and partial-side-effect behavior, including the fact that aborting a client request cannot guarantee a remote provider or accepted SQL statement stopped.
-- Exercise timeout, retry, log redaction, and failure behavior across manual, webhook, and scheduled entry points.
+- Add direct route-adapter tests for manual/retry persistence and continue exercising timeout, retry, log redaction, and failure behavior across all entry points.
 - Keep execution history responsive and useful as volume grows; add operational metrics only with privacy-safe retention and clear ownership.
 
 **Exit criteria:** no stuck run is silently reported as complete, users can understand and safely recover eligible failures, and execution remains bounded with tested partial-side-effect semantics.

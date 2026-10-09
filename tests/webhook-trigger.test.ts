@@ -2,6 +2,7 @@ import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 import { createWebhookToken } from '../src/server/workflows/webhook-token';
 import { webhookBodySchema } from '../src/server/workflows/webhook-validation';
+import { EXECUTION_FAILURE_FINALIZATION_TIMEOUT_MS, EXECUTION_FINALIZATION_TIMEOUT_MS } from '../src/server/execution/persistence-timeout';
 import { handleWebhookRequest, type WebhookExecutionStore } from '../src/server/workflows/webhook-trigger-core';
 import type { WorkflowExecutionResult } from '../src/server/execution/engine';
 
@@ -61,6 +62,39 @@ test('webhook handler executes a valid active graph and persists only summarized
   assert.equal(response.status, 200);
   assert.deepEqual(triggerData, { received: true, topLevelFieldCount: 2 });
   assert.equal(await response.text().then((body) => body.includes('do-not-persist')), false);
+});
+
+test('webhook result writes share one bounded signal and failure recovery gets a fresh short signal', async () => {
+  let logSignal: AbortSignal | undefined;
+  let finishSignal: AbortSignal | undefined;
+  const success = await handleWebhookRequest(request({ event: 'created' }), token, {
+    store: store({
+      appendLogs: async (_executionId, _logs, signal) => { logSignal = signal; },
+      finishExecution: async (_workflowId, _executionId, _result, _completedAt, signal) => { finishSignal = signal; },
+    }),
+    runGraph: async () => completed,
+  });
+  assert.equal(success.status, 200);
+  assert.ok(logSignal instanceof AbortSignal);
+  assert.equal(logSignal, finishSignal);
+  assert.equal(logSignal.aborted, false);
+  assert.equal(EXECUTION_FINALIZATION_TIMEOUT_MS, 2_000);
+
+  let failedLogSignal: AbortSignal | undefined;
+  let recoverySignal: AbortSignal | undefined;
+  const failed = await handleWebhookRequest(request({ event: 'created' }), token, {
+    store: store({
+      appendLogs: async (_executionId, _logs, signal) => { failedLogSignal = signal; throw new Error('database details'); },
+      failExecution: async (_workflowId, _executionId, signal) => { recoverySignal = signal; },
+    }),
+    runGraph: async () => completed,
+  });
+  assert.equal(failed.status, 503);
+  assert.ok(failedLogSignal instanceof AbortSignal);
+  assert.ok(recoverySignal instanceof AbortSignal);
+  assert.notEqual(failedLogSignal, recoverySignal);
+  assert.equal(recoverySignal.aborted, false);
+  assert.equal(EXECUTION_FAILURE_FINALIZATION_TIMEOUT_MS, 1_000);
 });
 
 test('unknown, malformed, inactive, and wrong-trigger tokens do not reveal token state', async () => {

@@ -1,5 +1,6 @@
 import { jsonResponse, parseJsonBody } from '../auth/http';
 import { executeWorkflowGraph, type WorkflowExecutionResult } from '../execution/engine';
+import { createExecutionFailureSignal, createExecutionFinalizationSignal } from '../execution/persistence-timeout';
 import { summarizeTriggerInput, type SafeExecutionLog } from '../execution/logging';
 import { workflowGraphSchema, type WorkflowGraphInput } from './graph-validation';
 import { webhookBodySchema } from './webhook-validation';
@@ -16,9 +17,9 @@ export interface WebhookExecutionStore {
   loadGraph: (workflowId: string) => Promise<LoadedGraph>;
   createExecution: (workflowId: string, triggerData: Record<string, unknown>) => Promise<CreatedExecution | null>;
   markRunning: (workflowId: string, executionId: string, startedAt: Date) => Promise<void>;
-  appendLogs: (executionId: string, logs: SafeExecutionLog[]) => Promise<void>;
-  finishExecution: (workflowId: string, executionId: string, result: WorkflowExecutionResult, completedAt: Date) => Promise<void>;
-  failExecution: (workflowId: string, executionId: string) => Promise<void>;
+  appendLogs: (executionId: string, logs: SafeExecutionLog[], signal: AbortSignal) => Promise<void>;
+  finishExecution: (workflowId: string, executionId: string, result: WorkflowExecutionResult, completedAt: Date, signal: AbortSignal) => Promise<void>;
+  failExecution: (workflowId: string, executionId: string, signal: AbortSignal) => Promise<void>;
 }
 
 export interface WebhookExecutionDependencies {
@@ -64,10 +65,11 @@ export async function handleWebhookRequest(
     await dependencies.store.markRunning(workflow.id, execution.id, startedAt);
     const runGraph = dependencies.runGraph ?? ((graph, input) => defaultRunGraph(graph, input));
     const result = await runGraph(parsedGraph.data, triggerInput, workflow.ownerId);
-    if (result.logs.length > 0) await dependencies.store.appendLogs(execution.id, result.logs);
+    const persistenceSignal = createExecutionFinalizationSignal();
+    if (result.logs.length > 0) await dependencies.store.appendLogs(execution.id, result.logs, persistenceSignal);
 
     const completedAt = new Date();
-    await dependencies.store.finishExecution(workflow.id, execution.id, result, completedAt);
+    await dependencies.store.finishExecution(workflow.id, execution.id, result, completedAt, persistenceSignal);
     return jsonResponse(200, {
       execution: {
         id: execution.id,
@@ -81,7 +83,7 @@ export async function handleWebhookRequest(
     });
   } catch {
     if (workflow && execution) {
-      try { await dependencies.store.failExecution(workflow.id, execution.id); } catch { /* avoid exposing persistence details */ }
+      try { await dependencies.store.failExecution(workflow.id, execution.id, createExecutionFailureSignal()); } catch { /* avoid exposing persistence details */ }
     }
     return jsonResponse(503, { error: 'Workflow execution service unavailable.' });
   }

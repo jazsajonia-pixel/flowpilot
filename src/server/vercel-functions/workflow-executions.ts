@@ -1,13 +1,14 @@
 import type { Config, Context } from '@netlify/functions';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { db } from '../../db';
+import { db, getDbForSignal } from '../../db';
 import { connections, executions, executionLogs, workflowNodes, workflows } from '../../db/schema';
 import { getRequestUser } from '../../server/auth/request-user';
 import { isSameOriginRequest, jsonResponse, parseJsonBody } from '../../server/auth/http';
 import { createOwnerEmailNotifier } from '../../server/notifications/owner-email';
 import { createOwnerDataStore } from '../../server/data/owner-data-store';
 import { executeWorkflowGraph } from '../../server/execution/engine';
+import { createExecutionFailureSignal, createExecutionFinalizationSignal } from '../../server/execution/persistence-timeout';
 import { summarizeTriggerInput } from '../../server/execution/logging';
 import { createOwnerAIProviderResolver } from '../../server/ai/provider-resolver';
 import { findOwnedAICredential } from '../../server/ai/owned-credential-lookup';
@@ -102,8 +103,9 @@ export default async function workflowExecutions(request: Request, context: Cont
 
     const sendEmail = createOwnerEmailNotifier(user.id);
     const result = await executeWorkflowGraph(parsedGraph.data, triggerInput, { resolveAIProvider, dataStore: createOwnerDataStore(user.id), ...(sendEmail ? { sendEmail } : {}) });
+    const finalizationDb = getDbForSignal(createExecutionFinalizationSignal());
     if (result.logs.length > 0) {
-      await db.insert(executionLogs).values(
+      await finalizationDb.insert(executionLogs).values(
         result.logs.map((log) => ({
           executionId: created.id,
           nodeId: log.nodeId,
@@ -117,7 +119,7 @@ export default async function workflowExecutions(request: Request, context: Cont
     }
 
     const completedAt = new Date();
-    await db
+    await finalizationDb
       .update(executions)
       .set({ status: result.status, completedAt, error: result.error ?? null })
       .where(and(eq(executions.id, created.id), eq(executions.workflowId, workflowId)));
@@ -136,7 +138,7 @@ export default async function workflowExecutions(request: Request, context: Cont
   } catch {
     if (startedExecutionId && startedWorkflowId) {
       try {
-        await db
+        await getDbForSignal(createExecutionFailureSignal())
           .update(executions)
           .set({ status: 'failed', completedAt: new Date(), error: 'Execution persistence failed.' })
           .where(and(eq(executions.id, startedExecutionId), eq(executions.workflowId, startedWorkflowId)));

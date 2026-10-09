@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, inArray, sql, type SQL } from 'drizzle-orm';
 import { z } from 'zod';
-import { db } from '../../db';
+import { db, getDbForSignal } from '../../db';
 import { connections, executionLogs, executions, workflowNodes, workflows } from '../../db/schema';
 import { getRequestUser } from '../../server/auth/request-user';
 import { isSameOriginRequest, jsonResponse } from '../../server/auth/http';
@@ -8,6 +8,7 @@ import { findOwnedAICredential } from '../../server/ai/owned-credential-lookup';
 import { createOwnerAIProviderResolver } from '../../server/ai/provider-resolver';
 import { createOwnerDataStore } from '../../server/data/owner-data-store';
 import { executeWorkflowGraph } from '../../server/execution/engine';
+import { createExecutionFailureSignal, createExecutionFinalizationSignal } from '../../server/execution/persistence-timeout';
 import { createOwnerEmailNotifier } from '../../server/notifications/owner-email';
 import { planRetry, retryOfFrom, type RetryTriggerCategory } from '../../server/executions/retry';
 import { workflowGraphSchema } from '../../server/workflows/graph-validation';
@@ -238,7 +239,7 @@ export async function retryExecution(request: Request, context: { params: Record
     newExecutionId = createdId;
 
     if (summary.interrupted) {
-      await db
+      await getDbForSignal(createExecutionFinalizationSignal())
         .update(executions)
         .set({ status: 'failed', completedAt: new Date(), error: 'Run was interrupted before it finished.' })
         .where(and(eq(executions.id, original.id), inArray(executions.status, ['pending', 'running'])));
@@ -251,8 +252,9 @@ export async function retryExecution(request: Request, context: { params: Record
       dataStore: createOwnerDataStore(user.id),
       ...(sendEmail ? { sendEmail } : {}),
     });
+    const finalizationDb = getDbForSignal(createExecutionFinalizationSignal());
     if (result.logs.length > 0) {
-      await db.insert(executionLogs).values(result.logs.map((log) => ({
+      await finalizationDb.insert(executionLogs).values(result.logs.map((log) => ({
         executionId: createdId,
         nodeId: log.nodeId,
         status: log.status,
@@ -262,7 +264,7 @@ export async function retryExecution(request: Request, context: { params: Record
         timestamp: new Date(log.timestamp),
       })));
     }
-    await db
+    await finalizationDb
       .update(executions)
       .set({ status: result.status, completedAt: new Date(), error: result.error ?? null })
       .where(eq(executions.id, createdId));
@@ -270,7 +272,7 @@ export async function retryExecution(request: Request, context: { params: Record
   } catch {
     if (newExecutionId) {
       try {
-        await db.update(executions).set({ status: 'failed', completedAt: new Date(), error: 'Execution persistence failed.' }).where(eq(executions.id, newExecutionId));
+        await getDbForSignal(createExecutionFailureSignal()).update(executions).set({ status: 'failed', completedAt: new Date(), error: 'Execution persistence failed.' }).where(eq(executions.id, newExecutionId));
       } catch {
         // Database may be unavailable; never expose details.
       }
