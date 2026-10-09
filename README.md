@@ -19,6 +19,8 @@ FlowPilot AI is a modern, web-based visual automation platform that enables user
 - **Phase 5 — Gemini AI Integration:** COMPLETE
 - **Phase 6 — Bring Your Own AI:** COMPLETE
 - **Phase 7 — Automation Integrations & Triggers:** COMPLETE (Webhook and Schedule triggers, Send Email, owner-private database record actions)
+- **Phase 8 — Execution Monitoring & Reliability:** IN PROGRESS (execution history, run detail, retries complete)
+- **Continuous Integration:** Every PR runs type check, tests, build, and migration checks in GitHub Actions — see [`docs/ci.md`](docs/ci.md)
 
 ---
 
@@ -159,6 +161,7 @@ See [`docs/roadmap.md`](docs/roadmap.md) for full details.
 - [`docs/phase-6-references.md`](docs/phase-6-references.md) — Official provider, SDK, and runtime references for BYO AI.
 - [`docs/phase-4-references.md`](docs/phase-4-references.md) — Official sources used for execution limits and outbound request safeguards.
 - [`docs/roadmap.md`](docs/roadmap.md) — Multi-Phase Development Roadmap.
+- [`docs/ci.md`](docs/ci.md) — GitHub Actions CI pipeline, Dependabot, and PR/task templates.
 
 ---
 
