@@ -1,13 +1,14 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { jsonResponse } from '../auth/http';
 import type { WorkflowExecutionResult } from '../execution/engine';
+import { createExecutionFailureSignal, createExecutionFinalizationSignal } from '../execution/persistence-timeout';
 import type { SafeExecutionLog } from '../execution/logging';
 import { workflowGraphSchema, type WorkflowGraphInput } from './graph-validation';
 import { isScheduleDue, nearestUtcMidnight, parseScheduleConfig, type ScheduleTriggerConfig } from './schedule-config';
 
 /** Deployment-wide cap so one daily tick stays inside a single bounded serverless invocation. */
 export const MAX_ACTIVE_SCHEDULED_WORKFLOWS = 25;
-/** Concurrent runs per tick: 25 workflows / 5 lanes x 8 s engine budget ≈ 40 s worst case. */
+/** 25 workflows / 5 lanes × (8 s engine + 2 s finalization) ≈ 50 s; reserve the rest of Vercel's 60 s limit for loading/dispatch. */
 export const SCHEDULE_TICK_CONCURRENCY = 5;
 /** Accept ticks from 15 minutes before to 90 minutes after UTC midnight (Hobby fires within 00:00–00:59). */
 const EARLY_WINDOW_MS = 15 * 60 * 1000;
@@ -23,9 +24,9 @@ export interface ScheduleExecutionStore {
   /** Insert a pending execution for (workflowId, scheduledAt); resolve null when that slot already exists. */
   claimExecution: (workflowId: string, scheduledAt: Date, triggerData: Record<string, unknown>) => Promise<{ id: string } | null>;
   markRunning: (workflowId: string, executionId: string, startedAt: Date) => Promise<void>;
-  appendLogs: (executionId: string, logs: SafeExecutionLog[]) => Promise<void>;
-  finishExecution: (workflowId: string, executionId: string, result: WorkflowExecutionResult, completedAt: Date) => Promise<void>;
-  failExecution: (workflowId: string, executionId: string) => Promise<void>;
+  appendLogs: (executionId: string, logs: SafeExecutionLog[], signal: AbortSignal) => Promise<void>;
+  finishExecution: (workflowId: string, executionId: string, result: WorkflowExecutionResult, completedAt: Date, signal: AbortSignal) => Promise<void>;
+  failExecution: (workflowId: string, executionId: string, signal: AbortSignal) => Promise<void>;
 }
 
 export interface ScheduleTickDependencies {
@@ -101,12 +102,13 @@ async function runScheduledWorkflow(
 
     await store.markRunning(workflow.id, execution.id, new Date());
     const result = await dependencies.runGraph(parsedGraph.data, triggerInput, workflow.ownerId);
-    if (result.logs.length > 0) await store.appendLogs(execution.id, result.logs);
-    await store.finishExecution(workflow.id, execution.id, result, new Date());
+    const persistenceSignal = createExecutionFinalizationSignal();
+    if (result.logs.length > 0) await store.appendLogs(execution.id, result.logs, persistenceSignal);
+    await store.finishExecution(workflow.id, execution.id, result, new Date(), persistenceSignal);
     return result.status;
   } catch {
     if (executionId) {
-      try { await store.failExecution(workflow.id, executionId); } catch { /* keep persistence details private */ }
+      try { await store.failExecution(workflow.id, executionId, createExecutionFailureSignal()); } catch { /* keep persistence details private */ }
     }
     return 'error';
   }

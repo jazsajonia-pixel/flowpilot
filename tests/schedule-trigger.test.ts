@@ -1,6 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 import { executeWorkflowGraph, type WorkflowExecutionResult } from '../src/server/execution/engine';
+import { EXECUTION_FAILURE_FINALIZATION_TIMEOUT_MS, EXECUTION_FINALIZATION_TIMEOUT_MS } from '../src/server/execution/persistence-timeout';
 import { checkWorkflowActivation } from '../src/server/workflows/activation';
 import { workflowGraphSchema } from '../src/server/workflows/graph-validation';
 import { isScheduleDue, nearestUtcMidnight, parseScheduleConfig } from '../src/server/workflows/schedule-config';
@@ -127,6 +128,47 @@ test('tick runs due workflows once per slot and suppresses duplicate invocations
   assert.equal(second.outcomes.duplicate, 2);
   assert.equal(second.outcomes.completed, 0);
   assert.equal(finished.length, 2);
+});
+
+test('scheduled result writes share one bounded signal and failure recovery gets a fresh short signal', async () => {
+  let logSignal: AbortSignal | undefined;
+  let finishSignal: AbortSignal | undefined;
+  const { store } = memoryStore();
+  const success = await handleScheduleTick(tickRequest(), {
+    store: {
+      ...store,
+      appendLogs: async (_executionId, _logs, signal) => { logSignal = signal; },
+      finishExecution: async (_workflowId, _executionId, _result, _completedAt, signal) => { finishSignal = signal; },
+    },
+    cronSecret: SECRET,
+    now: () => TICK,
+    runGraph: async () => ({ ...completed, logs: [{ nodeId: NODE_ID, status: 'success', timestamp: TICK.toISOString() }] }),
+  });
+  assert.equal((await success.json()).outcomes.completed, 1);
+  assert.ok(logSignal instanceof AbortSignal);
+  assert.equal(logSignal, finishSignal);
+  assert.equal(logSignal.aborted, false);
+  assert.equal(EXECUTION_FINALIZATION_TIMEOUT_MS, 2_000);
+
+  let failedLogSignal: AbortSignal | undefined;
+  let recoverySignal: AbortSignal | undefined;
+  const { store: failureStore } = memoryStore();
+  const failed = await handleScheduleTick(tickRequest(), {
+    store: {
+      ...failureStore,
+      appendLogs: async (_executionId, _logs, signal) => { failedLogSignal = signal; throw new Error('database details'); },
+      failExecution: async (_workflowId, _executionId, signal) => { recoverySignal = signal; },
+    },
+    cronSecret: SECRET,
+    now: () => TICK,
+    runGraph: async () => ({ ...completed, logs: [{ nodeId: NODE_ID, status: 'success', timestamp: TICK.toISOString() }] }),
+  });
+  assert.equal((await failed.json()).outcomes.error, 1);
+  assert.ok(failedLogSignal instanceof AbortSignal);
+  assert.ok(recoverySignal instanceof AbortSignal);
+  assert.notEqual(failedLogSignal, recoverySignal);
+  assert.equal(recoverySignal.aborted, false);
+  assert.equal(EXECUTION_FAILURE_FINALIZATION_TIMEOUT_MS, 1_000);
 });
 
 test('tick skips non-due, invalid, and wrong-trigger graphs without creating executions', async () => {

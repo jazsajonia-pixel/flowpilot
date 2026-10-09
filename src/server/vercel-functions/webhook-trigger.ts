@@ -1,6 +1,6 @@
 import type { Config, Context } from '@netlify/functions';
 import { and, eq } from 'drizzle-orm';
-import { db } from '../../db';
+import { db, getDbForSignal } from '../../db';
 import { connections, executions, executionLogs, workflowNodes, workflows } from '../../db/schema';
 import { findOwnedAICredential } from '../../server/ai/owned-credential-lookup';
 import { createOwnerAIProviderResolver } from '../../server/ai/provider-resolver';
@@ -65,8 +65,8 @@ export default async function webhookTrigger(request: Request, context: Context)
           .set({ status: 'running', startedAt })
           .where(and(eq(executions.id, executionId), eq(executions.workflowId, workflowId)));
       },
-      async appendLogs(executionId, logs) {
-        await db.insert(executionLogs).values(
+      async appendLogs(executionId, logs, signal) {
+        await getDbForSignal(signal).insert(executionLogs).values(
           logs.map((log) => ({
             executionId,
             nodeId: log.nodeId,
@@ -78,14 +78,14 @@ export default async function webhookTrigger(request: Request, context: Context)
           })),
         );
       },
-      async finishExecution(workflowId, executionId, result, completedAt) {
-        await db
+      async finishExecution(workflowId, executionId, result, completedAt, signal) {
+        await getDbForSignal(signal)
           .update(executions)
           .set({ status: result.status, completedAt, error: result.error ?? null })
           .where(and(eq(executions.id, executionId), eq(executions.workflowId, workflowId)));
       },
-      async failExecution(workflowId, executionId) {
-        await db
+      async failExecution(workflowId, executionId, signal) {
+        await getDbForSignal(signal)
           .update(executions)
           .set({ status: 'failed', completedAt: new Date(), error: 'Execution persistence failed.' })
           .where(and(eq(executions.id, executionId), eq(executions.workflowId, workflowId)));
