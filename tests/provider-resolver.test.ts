@@ -24,6 +24,18 @@ test('provider resolver requests an owner/provider/ID match and creates the requ
   assert.deepEqual(lookups, [[ownerId, credentialId, 'openai']]);
 });
 
+test('provider resolver passes the execution abort signal to credential lookup', async () => {
+  const controller = new AbortController();
+  let lookupSignal: AbortSignal | undefined;
+  const resolve = createOwnerAIProviderResolver(ownerId, async (_owner, _credential, _provider, signal) => {
+    lookupSignal = signal;
+    return { id: credentialId, ownerId, provider: 'openai', encryptedPayload };
+  }, encryptionKey);
+
+  await resolve({ provider: 'openai', credentialId }, controller.signal);
+  assert.equal(lookupSignal, controller.signal);
+});
+
 test('provider resolver rejects credentials returned for a different owner', async () => {
   const resolve = createOwnerAIProviderResolver(ownerId, async () => ({
     id: credentialId,

@@ -2,15 +2,15 @@ import type { Config, Context } from '@netlify/functions';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
-import { connections, credentials, executions, executionLogs, workflowNodes, workflows } from '../../db/schema';
+import { connections, executions, executionLogs, workflowNodes, workflows } from '../../db/schema';
 import { getRequestUser } from '../../server/auth/request-user';
 import { isSameOriginRequest, jsonResponse, parseJsonBody } from '../../server/auth/http';
 import { createOwnerEmailNotifier } from '../../server/notifications/owner-email';
 import { createOwnerDataStore } from '../../server/data/owner-data-store';
 import { executeWorkflowGraph } from '../../server/execution/engine';
 import { summarizeTriggerInput } from '../../server/execution/logging';
-import { isAIProviderId } from '../../types/ai';
 import { createOwnerAIProviderResolver } from '../../server/ai/provider-resolver';
+import { findOwnedAICredential } from '../../server/ai/owned-credential-lookup';
 import { workflowGraphSchema } from '../../server/workflows/graph-validation';
 import { workflowOwnerScope } from '../../server/workflows/ownership';
 import { workflowIdSchema } from '../../server/workflows/validation';
@@ -98,24 +98,7 @@ export default async function workflowExecutions(request: Request, context: Cont
       .set({ status: 'running', startedAt })
       .where(and(eq(executions.id, created.id), eq(executions.workflowId, workflowId)));
 
-    const resolveAIProvider = createOwnerAIProviderResolver(user.id, async (ownerId, credentialId, provider) => {
-      const [credential] = await db
-        .select({
-          id: credentials.id,
-          ownerId: credentials.ownerId,
-          provider: credentials.provider,
-          encryptedPayload: credentials.encryptedPayload,
-        })
-        .from(credentials)
-        .where(and(
-          eq(credentials.id, credentialId),
-          eq(credentials.ownerId, ownerId),
-          eq(credentials.provider, provider),
-        ))
-        .limit(1);
-      if (!credential || !isAIProviderId(credential.provider)) return null;
-      return { ...credential, provider: credential.provider };
-    });
+    const resolveAIProvider = createOwnerAIProviderResolver(user.id, findOwnedAICredential);
 
     const sendEmail = createOwnerEmailNotifier(user.id);
     const result = await executeWorkflowGraph(parsedGraph.data, triggerInput, { resolveAIProvider, dataStore: createOwnerDataStore(user.id), ...(sendEmail ? { sendEmail } : {}) });

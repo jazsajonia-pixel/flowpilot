@@ -120,6 +120,52 @@ test('AI nodes fail safely when the server Gemini provider is not configured', a
   assert.equal(JSON.stringify(result).includes('never log this private prompt'), false);
 });
 
+test('stalled owner data operations abort at the run deadline and skip downstream actions', async () => {
+  const recordNodeId = 'c18b6c07-750c-4be1-a1e0-8b1a5f2e0007';
+  const graph: WorkflowGraphInput = {
+    nodes: [
+      node(ids.trigger, 'manual_trigger'),
+      node(recordNodeId, 'create_db_record', { collection: 'records', key: 'record-1', data: '{"private":"secret-value"}' }),
+      node(ids.trueAction, 'http_request', { url: 'https://example.com/should-not-run', method: 'GET' }),
+    ],
+    connections: [
+      edge('c18b6c07-750c-4be1-a1e0-8b1a5f2e0043', ids.trigger, recordNodeId),
+      edge('c18b6c07-750c-4be1-a1e0-8b1a5f2e0044', recordNodeId, ids.trueAction),
+    ],
+  };
+  let operationSignal: AbortSignal | undefined;
+  const startedAt = Date.now();
+  // A real pending fetch keeps the event loop alive; AbortSignal.timeout alone uses an unref'ed timer.
+  const keepAlive = setTimeout(() => undefined, 1_000);
+  const result = await executeWorkflowGraph(graph, {}, {
+    timeoutMs: 50,
+    dataStore: {
+      create: async (_collection, _key, _data, signal) => {
+        if (!signal) throw new Error('Expected the execution deadline signal.');
+        operationSignal = signal;
+        return new Promise<'created'>((_resolve, reject) => {
+          if (signal.aborted) {
+            reject(signal.reason);
+            return;
+          }
+          signal.addEventListener('abort', () => reject(signal.reason), { once: true });
+        });
+      },
+      update: async () => false,
+    },
+    request: async () => { throw new Error('A downstream action must not run after timeout.'); },
+  });
+  clearTimeout(keepAlive);
+
+  assert.ok(Date.now() - startedAt < 1_000);
+  assert.equal(result.status, 'failed');
+  assert.equal(operationSignal?.aborted, true);
+  assert.equal(result.logs.find((log) => log.nodeId === recordNodeId)?.status, 'error');
+  assert.equal(result.logs.find((log) => log.nodeId === ids.trueAction)?.status, 'skipped');
+  assert.equal(result.error, 'Node execution failed. Check the node configuration and try again.');
+  assert.equal(JSON.stringify(result).includes('secret-value'), false);
+});
+
 test('cyclic graphs fail before any node is executed', async () => {
   const graph: WorkflowGraphInput = {
     nodes: [node(ids.trigger, 'manual_trigger'), node(ids.condition, 'condition', { left: 'a', operator: 'equals', right: 'a' })],
@@ -281,6 +327,7 @@ test('all Phase 5 AI node types resolve templates, parse structured results, and
 
 test('workflow execution resolves BYO provider selections only when the AI node is reached', async () => {
   const selectionCalls: Array<{ provider: string; credentialId?: string; model?: string }> = [];
+  const resolverSignals: AbortSignal[] = [];
   const provider: AIProvider = {
     id: 'test-openai',
     name: 'Test OpenAI',
@@ -300,14 +347,17 @@ test('workflow execution resolves BYO provider selections only when the AI node 
   };
 
   const result = await executeWorkflowGraph(graph, { body: { message: 'private source' } }, {
-    resolveAIProvider: async (selection) => {
+    resolveAIProvider: async (selection, signal) => {
       selectionCalls.push(selection);
+      if (signal) resolverSignals.push(signal);
       return provider;
     },
   });
 
   assert.equal(result.status, 'completed');
   assert.deepEqual(selectionCalls, [{ provider: 'openai', credentialId: 'c1d6b0d0-2ce8-4f58-8e60-59f249c33971', model: 'gpt-6-luna' }]);
+  assert.equal(resolverSignals.length, 1);
+  assert.equal(resolverSignals[0].aborted, false);
   assert.equal(JSON.stringify(result).includes('private AI result'), false);
   assert.equal(JSON.stringify(result).includes('private source'), false);
 });

@@ -1,5 +1,5 @@
 import { and, eq, sql } from 'drizzle-orm';
-import { db } from '../../db';
+import { db, getDbForSignal } from '../../db';
 import { dataRecords, users } from '../../db/schema';
 import { MAX_RECORDS_PER_OWNER, withRunWriteLimit, type OwnerDataStore } from './records';
 
@@ -9,8 +9,9 @@ import { MAX_RECORDS_PER_OWNER, withRunWriteLimit, type OwnerDataStore } from '.
  */
 export function createOwnerDataStore(ownerId: string): OwnerDataStore {
   return withRunWriteLimit({
-    async create(collection, key, data) {
-      const inserted = await db.execute<{ id: string }>(sql`
+    async create(collection, key, data, signal) {
+      const queryDb = signal ? getDbForSignal(signal) : db;
+      const inserted = await queryDb.execute<{ id: string }>(sql`
         insert into ${dataRecords} (owner_id, collection, record_key, data)
         select ${ownerId}, ${collection}, ${key}, ${JSON.stringify(data)}::jsonb
         where exists (select 1 from ${users} where ${users.id} = ${ownerId})
@@ -19,16 +20,17 @@ export function createOwnerDataStore(ownerId: string): OwnerDataStore {
         returning id
       `);
       if (inserted.rows.length > 0) return 'created';
-      const [existing] = await db
+      const [existing] = await queryDb
         .select({ id: dataRecords.id })
         .from(dataRecords)
         .where(and(eq(dataRecords.ownerId, ownerId), eq(dataRecords.collection, collection), eq(dataRecords.recordKey, key)))
         .limit(1);
       return existing ? 'exists' : 'limit';
     },
-    async update(collection, key, data, mode) {
+    async update(collection, key, data, mode, signal) {
+      const queryDb = signal ? getDbForSignal(signal) : db;
       const json = JSON.stringify(data);
-      const updated = await db
+      const updated = await queryDb
         .update(dataRecords)
         .set({
           data: mode === 'merge' ? sql`${dataRecords.data} || ${json}::jsonb` : sql`${json}::jsonb`,

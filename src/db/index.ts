@@ -19,4 +19,11 @@ export function getDb() {
   return db;
 }
 
+export function getDbForSignal(signal: AbortSignal) {
+  const abortableSql = neon(databaseUrl ?? 'postgresql://localhost/flowpilot', {
+    fetchOptions: { signal },
+  });
+  return drizzle(abortableSql, { schema });
+}
+
 export { schema };

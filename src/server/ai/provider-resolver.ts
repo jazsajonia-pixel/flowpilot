@@ -27,9 +27,10 @@ export type FindOwnedCredential = (
   ownerId: string,
   credentialId: string,
   provider: AIProviderId,
+  signal?: AbortSignal,
 ) => Promise<StoredAICredential | null>;
 
-export type AIProviderResolver = (selection: AIProviderSelection) => Promise<AIProvider>;
+export type AIProviderResolver = (selection: AIProviderSelection, signal?: AbortSignal) => Promise<AIProvider>;
 
 export function createOwnerAIProviderResolver(
   ownerId: string,
@@ -38,7 +39,7 @@ export function createOwnerAIProviderResolver(
 ): AIProviderResolver {
   const providerCache = new Map<string, Promise<AIProvider>>();
 
-  return async (selection) => {
+  return async (selection, signal) => {
     if (!isAIProviderId(selection.provider)) throw new AIProviderError('The selected AI provider is not available.');
     if (selection.model !== undefined && !isAIModelForProvider(selection.provider, selection.model)) {
       throw new AIProviderError('The selected AI provider is not available.');
@@ -60,7 +61,9 @@ export function createOwnerAIProviderResolver(
     let provider = providerCache.get(cacheKey);
     if (!provider) {
       provider = (async () => {
-        const credential = await findCredential(ownerId, selection.credentialId as string, selection.provider);
+        const credential = signal
+          ? await findCredential(ownerId, selection.credentialId as string, selection.provider, signal)
+          : await findCredential(ownerId, selection.credentialId as string, selection.provider);
         if (!credential || credential.ownerId !== ownerId || credential.id !== selection.credentialId || credential.provider !== selection.provider) {
           throw new AIProviderError('The selected AI provider credential is unavailable.');
         }
