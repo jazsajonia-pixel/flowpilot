@@ -6,7 +6,7 @@ This is the **authoritative product roadmap** for FlowPilot. Update phase status
 
 ## Current status snapshot
 
-**Last verified:** 2026-10-10. **Current milestone:** Phase 8 — Execution Monitoring, Logs & Reliability (**in progress**). The last runtime-changing revision is `614fdb8` (PR #33); its Vercel production deployment and read-only frontend, liveness, and Neon health checks succeeded. PRs #34 and #35 were documentation-only and made no runtime changes.
+**Last verified:** 2026-10-10. **Current milestone:** Phase 8 — Execution Monitoring, Logs & Reliability (**in progress**). The last runtime-changing revision is `527a749` (PR #37); Vercel reports its production deployment as READY, and the frontend, liveness, and Neon health probes pass on the repository-linked domain. The requested `flowpilot-app.vercel.app` still serves the legacy app because its alias is controlled outside the connected Vercel project.
 
 | Area | Verified status and known limit |
 |---|---|
