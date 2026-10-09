@@ -20,7 +20,7 @@
     "clsx": "^2.1.0",
     "drizzle-orm": "^0.45.3",
     "ipaddr.js": "^2.5.0",
-    "lucide-react": "^0.359.0",
+    "lucide-react": "^1.52.0",
     "openai": "7.28.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
