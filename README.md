@@ -10,7 +10,7 @@ FlowPilot AI is a modern, web-based visual automation platform that enables user
 
 - **Phase 0 — Project Constitution & Architecture:** COMPLETE
 - **Phase 1 — Application Foundation:** COMPLETE
-- **Phase 2A — Database Infrastructure + Drizzle + Netlify Database:** COMPLETE
+- **Phase 2A — Database Infrastructure + Drizzle + PostgreSQL (Neon):** COMPLETE (legacy Netlify paths retained)
 - **Phase 2B — Application Database Schema:** COMPLETE
 - **Phase 2C — Authentication & Sessions:** COMPLETE
 - **Phase 2D — Protected API & Ownership Verification:** COMPLETE
@@ -18,8 +18,8 @@ FlowPilot AI is a modern, web-based visual automation platform that enables user
 - **Phase 4 — Workflow Execution Engine:** COMPLETE
 - **Phase 5 — Gemini AI Integration:** COMPLETE
 - **Phase 6 — Bring Your Own AI:** COMPLETE
-- **Phase 7 — Automation Integrations & Triggers:** COMPLETE (Webhook and Schedule triggers, Send Email, owner-private database record actions)
-- **Phase 8 — Execution Monitoring & Reliability:** IN PROGRESS (execution history, run detail, retries complete)
+- **Phase 7 — Built-in Triggers & Internal Actions:** COMPLETE (Webhook and Schedule triggers, owner-only Send Email, owner-private database record actions; native third-party app connectors are future phases)
+- **Phase 8 — Execution Monitoring & Reliability:** IN PROGRESS (history/detail, safe logs, retries, and per-node AI/HTTP/email/Neon timeouts implemented; route-level interruption recovery remains)
 - **Continuous Integration:** Every PR runs type check, tests, build, and migration checks in GitHub Actions — see [`docs/ci.md`](docs/ci.md)
 
 ---
@@ -130,22 +130,11 @@ FlowPilot AI
 
 ## 🗺️ Roadmap Summary
 
-1. **Phase 0:** Project Constitution & Architecture *(Completed)*
-2. **Phase 1:** Application Foundation *(Completed)*
-3. **Phase 2A:** Database Infrastructure + Drizzle + Netlify Database *(Completed)*
-4. **Phase 2B:** Application Database Schema *(Completed)*
-5. **Phase 2C:** Authentication & Sessions *(Completed)*
-6. **Phase 2D:** Protected API & Ownership Verification *(Completed)*
-7. **Phase 3:** Visual Workflow Builder (React Flow) *(Completed)*
-8. **Phase 4:** Workflow Execution Engine *(Completed)*
-9. **Phase 5:** Gemini AI Integration *(Completed)*
-10. **Phase 6:** Bring Your Own AI (BYO AI) *(Completed)*
-11. **Phase 7:** Automation Integrations & Webhooks *(In progress)*
-12. **Phase 8:** Execution Monitoring & Reliability
-13. **Phase 9:** Security, Testing & Production Hardening
-14. **Phase 10:** Final UI/UX & Portfolio Polish
+- **Completed baseline:** Phases 0–7 (project foundation, auth/ownership, visual builder, execution, AI/BYO-AI, and built-in triggers/actions).
+- **Current focus:** Phase 8 — execution monitoring and reliability; details and remaining work are in [`docs/roadmap.md`](docs/roadmap.md).
+- **Next:** Phase 9 production hardening, then Phase 10 connector infrastructure and the native app integrations planned through Phase 16.
 
-See [`docs/roadmap.md`](docs/roadmap.md) for full details.
+See [`docs/roadmap.md`](docs/roadmap.md) for the complete phase plan and [`docs/autonomous-development-prompt.md`](docs/autonomous-development-prompt.md) for the full autonomous-development instructions.
 
 ---
 
@@ -162,6 +151,7 @@ See [`docs/roadmap.md`](docs/roadmap.md) for full details.
 - [`docs/phase-4-references.md`](docs/phase-4-references.md) — Official sources used for execution limits and outbound request safeguards.
 - [`docs/roadmap.md`](docs/roadmap.md) — Multi-Phase Development Roadmap.
 - [`docs/ci.md`](docs/ci.md) — GitHub Actions CI pipeline, Dependabot, and PR/task templates.
+- [`docs/autonomous-development-prompt.md`](docs/autonomous-development-prompt.md) — Full instructions used by FlowPilot's autonomous development task.
 
 ---
 
