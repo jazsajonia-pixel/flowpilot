@@ -65,6 +65,7 @@
 }
 
 .flowpilot-node { animation: flowpilot-node-enter 240ms cubic-bezier(0.2, 0.75, 0.25, 1) both; }
+.flowpilot-connect-enter { animation: flowpilot-node-enter 260ms cubic-bezier(0.2, 0.75, 0.25, 1) both; }
 .flowpilot-node--running { border-color: #8b78ff !important; animation: flowpilot-node-running 1.25s ease-in-out infinite; }
 .flowpilot-node--success { border-color: #34b88a !important; animation: flowpilot-result-pop 360ms cubic-bezier(0.2, 0.75, 0.25, 1) both; }
 .flowpilot-node--error { border-color: #ee6b78 !important; animation: flowpilot-result-pop 360ms cubic-bezier(0.2, 0.75, 0.25, 1) both; }

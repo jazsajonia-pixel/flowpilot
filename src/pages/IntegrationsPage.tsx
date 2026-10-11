@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { NativeAppConnections } from '@/components/integrations/NativeAppConnections';
 import {
   ArrowRight,
   ArrowUpRight,
@@ -9,9 +10,7 @@ import {
   FormInput,
   Globe2,
   Mail,
-  MessageSquare,
   PlugZap,
-  Table2,
   Webhook,
 } from 'lucide-react';
 
@@ -24,12 +23,6 @@ const available = [
   { name: 'Email notices', kind: 'Notifications', description: 'Send a plain-text notification to the account email address with bounded per-run and daily limits.', icon: Mail, tone: 'bg-rose-50 text-rose-700', href: '/workflow-preview', action: 'Explore the builder', tag: 'Ready' },
 ];
 
-const planned = [
-  { name: 'Gmail', detail: 'Google OAuth, sender selection, and Gmail API actions are not configured yet.', icon: Mail, tone: 'bg-red-50 text-red-600' },
-  { name: 'Slack', detail: 'Workspace OAuth, channel selection, and message actions are not available yet.', icon: MessageSquare, tone: 'bg-violet-50 text-violet-600' },
-  { name: 'Airtable', detail: 'Base/table discovery and record actions still need the native connector foundation.', icon: Table2, tone: 'bg-amber-50 text-amber-700' },
-];
-
 export function IntegrationsPage() {
   return (
     <div className="space-y-7">
@@ -39,7 +32,7 @@ export function IntegrationsPage() {
           <div className="max-w-2xl">
             <span className="inline-flex items-center gap-2 rounded-full border border-violet-100 bg-violet-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.13em] text-violet-700"><PlugZap className="h-3.5 w-3.5" /> Integration hub</span>
             <h2 className="mt-4 text-2xl font-semibold tracking-[-0.035em] text-slate-950 sm:text-[30px]">Connect the pieces. Keep the flow moving.</h2>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">See what you can use today and what still needs a secure account-connection flow. No pretend connect buttons—just clear capabilities and next steps.</p>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">Connect authorized apps without putting tokens in workflow graphs. Clear status shows what is available now and what still needs provider actions.</p>
           </div>
           <Link to="/workflow-preview" className="inline-flex shrink-0 items-center gap-2 self-start rounded-xl bg-slate-950 px-4 py-2.5 text-xs font-semibold text-white shadow-md shadow-slate-950/10 transition-all hover:-translate-y-0.5 hover:bg-violet-800 md:self-auto">Open workflow canvas <ArrowRight className="h-3.5 w-3.5" /></Link>
         </div>
@@ -58,16 +51,9 @@ export function IntegrationsPage() {
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-[22px] border border-slate-200/80 bg-white shadow-sm shadow-slate-950/[0.025]">
-        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-6"><div><h3 className="text-sm font-semibold text-slate-900">Native app connections</h3><p className="mt-1 text-xs text-slate-500">These need OAuth, secure token storage, and tested provider actions before they can be connected.</p></div><span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-600">Not connected</span></div>
-        <div className="grid divide-y divide-slate-100 md:grid-cols-3 md:divide-x md:divide-y-0">
-          {planned.map((item) => (
-            <div key={item.name} className="flex gap-3 p-4 sm:p-5"><span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${item.tone}`}><item.icon className="h-[18px] w-[18px]" /></span><div><div className="flex items-center gap-2"><p className="text-xs font-semibold text-slate-800">{item.name}</p><span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide text-slate-500">Planned</span></div><p className="mt-1.5 text-[11px] leading-5 text-slate-500">{item.detail}</p></div></div>
-          ))}
-        </div>
-      </section>
+      <NativeAppConnections />
 
-      <aside className="flex gap-3 rounded-2xl border border-sky-100 bg-sky-50/70 p-4 sm:p-5"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-sky-700 shadow-sm"><Braces className="h-4 w-4" /></span><div><p className="text-xs font-semibold text-sky-950">Credential safety is a product boundary</p><p className="mt-1 text-[11px] leading-5 text-sky-900/80">FlowPilot currently blocks custom API auth headers to avoid storing tokens in workflow graphs. Gmail, Slack, and Airtable require the planned encrypted OAuth account layer; adding provider keys to a workflow is not a safe workaround.</p></div></aside>
+      <aside className="flex gap-3 rounded-2xl border border-sky-100 bg-sky-50/70 p-4 sm:p-5"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-sky-700 shadow-sm"><Braces className="h-4 w-4" /></span><div><p className="text-xs font-semibold text-sky-950">Credential safety is a product boundary</p><p className="mt-1 text-[11px] leading-5 text-sky-900/80">Connected OAuth tokens are encrypted server-side and never enter workflow graphs. Gmail, Slack, and Airtable action nodes are a separate follow-up; custom API auth headers remain blocked rather than offering an unsafe workaround.</p></div></aside>
     </div>
   );
 }

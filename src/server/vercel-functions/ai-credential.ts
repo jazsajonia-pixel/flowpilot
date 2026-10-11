@@ -1,8 +1,9 @@
 import type { Config, Context } from '@netlify/functions';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
 import { credentials } from '../../db/schema';
+import { AI_PROVIDER_IDS } from '../../types/ai';
 import { getRequestUser } from '../../server/auth/request-user';
 import { isSameOriginRequest, jsonResponse } from '../../server/auth/http';
 
@@ -25,7 +26,7 @@ export default async function aiCredential(request: Request, context: Context): 
 
     const [deleted] = await db
       .delete(credentials)
-      .where(and(eq(credentials.id, parsedId.data), eq(credentials.ownerId, user.id)))
+      .where(and(eq(credentials.id, parsedId.data), eq(credentials.ownerId, user.id), isNull(credentials.integrationId), inArray(credentials.provider, AI_PROVIDER_IDS)))
       .returning({ id: credentials.id });
     if (!deleted) return jsonResponse(404, { error: 'Credential not found.' });
     return jsonResponse(200, { ok: true });

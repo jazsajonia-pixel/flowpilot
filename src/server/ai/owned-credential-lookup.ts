@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { db, getDbForSignal } from '../../db';
 import { credentials } from '../../db/schema';
 import { isAIProviderId } from '../../types/ai';
@@ -19,6 +19,7 @@ export const findOwnedAICredential: FindOwnedCredential = async (ownerId, creden
       eq(credentials.id, credentialId),
       eq(credentials.ownerId, ownerId),
       eq(credentials.provider, provider),
+      isNull(credentials.integrationId),
     ))
     .limit(1);
   if (!credential || !isAIProviderId(credential.provider)) return null;
