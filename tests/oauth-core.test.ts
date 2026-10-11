@@ -77,6 +77,8 @@ class FakeOAuthRepository implements OAuthRepository {
 
   async markReauthRequired(): Promise<void> {
     this.reauthRequired = true;
+    if (this.credential) this.credential = { ...this.credential, status: 'reauth_required' };
+    if (this.account) this.account = { ...this.account, status: 'reauth_required' };
   }
 
   async removeAccount(candidateOwner: string, provider: OAuthProviderId, candidateIntegration: string): Promise<RemovedOAuthAccount | null> {
@@ -298,6 +300,41 @@ test('Airtable uses its fixed endpoint, S256 verifier, exact scopes, and optiona
   assert.equal(callback.status, 303);
   assert.equal(sentVerifier.length, 43);
   assert.equal(repository.account?.provider, 'airtable');
+
+  const noEchoRepository = new FakeOAuthRepository();
+  let noEchoTokenRequests = 0;
+  const noEchoService = makeService(noEchoRepository, async () => { noEchoTokenRequests += 1; return Response.json({}); }, airtableEnv);
+  const noEchoStart = await noEchoService.start(new Request('https://flowpilot.test/api/integrations/airtable/connect', { method: 'POST', headers: { origin: 'https://flowpilot.test' } }), 'airtable');
+  const noEchoUrl = new URL(((await noEchoStart.json()) as { authorizationUrl: string }).authorizationUrl);
+  const noEchoCookie = noEchoStart.headers.get('set-cookie')?.split(';', 1)[0];
+  assert.ok(noEchoCookie);
+  const missingEcho = await noEchoService.callback(new Request(`https://flowpilot.test/api/integrations/oauth/airtable/callback?code=airtable-code&state=${noEchoUrl.searchParams.get('state')}`, { headers: { cookie: noEchoCookie } }), 'airtable');
+  assert.equal(new URL(missingEcho.headers.get('location') ?? '').searchParams.get('oauth'), 'failed');
+  assert.equal(noEchoTokenRequests, 0);
+  assert.equal(noEchoRepository.account, null);
+});
+
+test('Airtable confidential-client authentication follows its documented Base64URL credential format', async () => {
+  const clientId = 'airtable-client-id';
+  const clientSecret = 'airtable-private-secret';
+  const airtableEnv = { NODE_ENV: 'test', OAUTH_REDIRECT_BASE_URL: 'https://flowpilot.test', AIRTABLE_OAUTH_CLIENT_ID: clientId, AIRTABLE_OAUTH_CLIENT_SECRET: clientSecret };
+  const repository = new FakeOAuthRepository();
+  let authorization = '';
+  const service = makeService(repository, async (_input, init) => {
+    const headers = new Headers(init?.headers);
+    authorization = headers.get('authorization') ?? '';
+    const form = init?.body as URLSearchParams;
+    assert.equal(form.get('client_id'), null);
+    assert.ok(form.get('code_verifier'));
+    return Response.json({ access_token: 'airtable-confidential-access-token', refresh_token: 'airtable-confidential-refresh-token', expires_in: 3600, token_type: 'Bearer', scope: 'data.records:read data.records:write schema.bases:read' });
+  }, airtableEnv);
+  const start = await service.start(new Request('https://flowpilot.test/api/integrations/airtable/connect', { method: 'POST', headers: { origin: 'https://flowpilot.test' } }), 'airtable');
+  const url = new URL(((await start.json()) as { authorizationUrl: string }).authorizationUrl);
+  const cookie = start.headers.get('set-cookie')?.split(';', 1)[0];
+  assert.ok(cookie);
+  const callback = await service.callback(new Request(`https://flowpilot.test/api/integrations/oauth/airtable/callback?code=airtable-code&state=${url.searchParams.get('state')}&code_challenge=${url.searchParams.get('code_challenge')}&code_challenge_method=S256`, { headers: { cookie } }), 'airtable');
+  assert.equal(callback.status, 303);
+  assert.equal(authorization, `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64url')}`);
 });
 
 test('expired OAuth access tokens refresh server-side, preserve omitted refresh tokens, and atomically replace ciphertext', async () => {
@@ -322,6 +359,28 @@ test('expired OAuth access tokens refresh server-side, preserve omitted refresh 
   assert.equal(stored.refreshToken, oldTokens.refreshToken);
   assert.equal(stored.refreshTokenExpiresAt, oldTokens.refreshTokenExpiresAt);
   assert.ok((stored.accessTokenExpiresAt ?? 0) > fixedTime.getTime());
+});
+
+test('permanent refresh-token rejection marks reauthorization while a transient provider outage does not', async () => {
+  const tokens: OAuthTokenSet = { accessToken: 'expired-access-token-0123456789', refreshToken: 'refresh-token-for-test-0123456789', accessTokenExpiresAt: fixedTime.getTime() - 1, refreshTokenExpiresAt: fixedTime.getTime() + 86_400_000, tokenType: 'Bearer', scopes: ['openid', 'email'] };
+  const makeCredential = (): StoredOAuthCredential => ({
+    integrationId, credentialId, ownerId, provider: 'gmail', name: 'pilot@example.com', status: 'connected', settings: {},
+    encryptedPayload: encryptOAuthTokens(tokens, { ownerId, resourceId: `${integrationId}:${credentialId}`, provider: 'gmail' }, key),
+  });
+
+  const rejectedRepository = new FakeOAuthRepository();
+  rejectedRepository.credential = makeCredential();
+  const rejectedService = makeService(rejectedRepository, async () => Response.json({ error: 'invalid_grant' }, { status: 400 }));
+  await assert.rejects(rejectedService.getValidAccessToken(ownerId, 'gmail', integrationId), OAuthOperationError);
+  assert.equal(rejectedRepository.reauthRequired, true);
+  assert.equal(rejectedRepository.credential?.status, 'reauth_required');
+
+  const transientRepository = new FakeOAuthRepository();
+  transientRepository.credential = makeCredential();
+  const transientService = makeService(transientRepository, async () => Response.json({ error: 'temporarily_unavailable' }, { status: 503 }));
+  await assert.rejects(transientService.getValidAccessToken(ownerId, 'gmail', integrationId), OAuthOperationError);
+  assert.equal(transientRepository.reauthRequired, false);
+  assert.equal(transientRepository.credential?.status, 'connected');
 });
 
 test('expired access token without a usable refresh token is marked for reauthorization', async () => {

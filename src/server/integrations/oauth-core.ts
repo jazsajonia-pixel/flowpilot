@@ -56,6 +56,13 @@ export class OAuthOperationError extends Error {
   }
 }
 
+class OAuthTokenEndpointError extends Error {
+  constructor(readonly code: string | null) {
+    super();
+    this.name = 'OAuthTokenEndpointError';
+  }
+}
+
 function sha256(value: string): string {
   return createHash('sha256').update(value, 'utf8').digest('hex');
 }
@@ -118,6 +125,16 @@ function providerFromId(value: string): OAuthProviderId | null {
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === 'object' && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : null;
+}
+
+function providerErrorCode(value: unknown): string | null {
+  const code = asRecord(value)?.error;
+  return typeof code === 'string' && /^[a-z0-9_]{1,64}$/i.test(code) ? code.toLowerCase() : null;
+}
+
+function isPermanentRefreshRejection(error: unknown): boolean {
+  return error instanceof OAuthTokenEndpointError
+    && ['invalid_grant', 'invalid_refresh_token', 'token_revoked'].includes(error.code ?? '');
 }
 
 function parseTokenResponse(value: unknown, provider: OAuthProviderConfig, now: Date, previousTokens?: OAuthTokenSet): OAuthTokenSet {
@@ -201,8 +218,10 @@ async function refreshTokens(provider: OAuthProviderConfig, old: OAuthTokenSet, 
   const fields: Record<string, string> = { refresh_token: old.refreshToken };
   const response = await fetchImpl(provider.tokenEndpoint, tokenRequest(provider, 'refresh_token', fields));
   const body = await readProviderJson(response);
-  if (!response.ok) throw new OAuthOperationError();
-  return parseTokenResponse(body, provider, now, old);
+  const record = asRecord(body);
+  const errorCode = providerErrorCode(body);
+  if (!response.ok || record?.ok === false || errorCode) throw new OAuthTokenEndpointError(errorCode);
+  return parseTokenResponse(record, provider, now, old);
 }
 
 async function accountIdentity(provider: OAuthProviderConfig, tokens: OAuthTokenSet, body: Record<string, unknown>, fetchImpl: typeof fetch): Promise<{ name: string; providerAccountId: string | null }> {
@@ -455,7 +474,7 @@ export function createOAuthService(dependencies: OAuthServiceDependencies) {
         if (winner.accessTokenExpiresAt === null || winner.accessTokenExpiresAt > now().getTime() + OAUTH_TOKEN_REFRESH_SKEW_MS) return winner.accessToken;
       }
       throw new OAuthOperationError('OAuth token refresh could not be saved.');
-    } catch {
+    } catch (error) {
       const latest = await repository.getCredential(ownerId, providerId, integrationId).catch(() => null);
       if (latest && latest.encryptedPayload !== record.encryptedPayload) {
         try {
@@ -467,6 +486,13 @@ export function createOAuthService(dependencies: OAuthServiceDependencies) {
           if (winner.accessTokenExpiresAt === null || winner.accessTokenExpiresAt > now().getTime() + OAUTH_TOKEN_REFRESH_SKEW_MS) return winner.accessToken;
         } catch {
           // Fail closed if the account was disconnected or the competing refresh could not be decrypted.
+        }
+      }
+      if (isPermanentRefreshRejection(error)) {
+        try {
+          await repository.markReauthRequired(ownerId, providerId, integrationId, now());
+        } catch {
+          // Keep the provider response opaque; the next attempt will still fail closed.
         }
       }
       throw new OAuthOperationError('OAuth token refresh failed. Reconnect the provider if the problem continues.');

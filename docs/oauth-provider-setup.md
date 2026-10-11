@@ -78,6 +78,8 @@ Official references: [Slack OAuth installation](https://docs.slack.dev/authentic
 
 These scopes permit reading and writing records and reading base schema; the OAuth foundation does **not** yet discover bases/tables or execute record actions. Airtable refresh tokens rotate and invalidate the previous access and refresh tokens, so FlowPilot replaces encrypted tokens atomically. Airtable's OAuth reference currently documents no token-revocation endpoint. Disconnect deletes FlowPilot's local encrypted credentials, but the user must also revoke the OAuth authorization through Airtable's connected-app/integration settings to revoke access at Airtable.
 
+Airtable's successful authorization redirect explicitly echoes `code_challenge` and `code_challenge_method` along with `code` and `state`; FlowPilot checks the echoed S256 challenge against the stored verifier before exchanging the code. For confidential Airtable integrations, its token endpoint specifically documents Base64URL-encoded `{client_id}:{client_secret}` in HTTP Basic (not generic Base64); public integrations omit the secret and send `client_id` in the form body.
+
 Official references: [Airtable OAuth guide](https://www.airtable.com/developers/web/guides/oauth-integrations), [Airtable OAuth reference](https://airtable.com/developers/web/api/oauth-reference), and [Airtable OAuth example](https://github.com/Airtable/oauth-example).
 
 ## Safe enablement sequence

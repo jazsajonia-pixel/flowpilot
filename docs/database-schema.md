@@ -53,4 +53,4 @@ GROUP BY integration_id
 HAVING COUNT(*) > 1;
 ```
 
-The query must return no rows. The migration creates `oauth_states`, adds its owner/indexes, and replaces the non-unique credential integration index with a unique one; it does not delete credential rows. Apply and verify the migration on both `flowpilot-staging` (Vercel Preview) and `flowpilot-production` before adding provider OAuth environment variables or enabling Connect. Do not test with writes against the production database.
+The query must return no rows before migration `0005_oauth_state` is applied. The migration creates `oauth_states`, adds its owner/indexes, and replaces the non-unique credential integration index with a unique one; it does not delete or rewrite credential rows, so a preflight is required before applying it to a populated database. Apply and verify the migration on both `flowpilot-staging` (Vercel Preview) and `flowpilot-production` before adding provider OAuth environment variables or enabling Connect. Do not test with writes against the production database.

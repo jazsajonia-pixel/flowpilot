@@ -165,7 +165,8 @@ export function NativeAppConnections() {
           const config = providerStatus.get(provider);
           const accounts = data?.accounts.filter((account) => account.provider === provider) ?? [];
           const configured = config?.configured === true;
-          const setupStatus = data ? (configured ? 'OAuth ready' : 'Setup needed') : (isLoading ? 'Checking…' : 'Unavailable');
+          const vaultKeyMissing = config?.setupHint?.includes('CREDENTIAL_ENCRYPTION_KEY') ?? false;
+          const setupStatus = data ? (configured ? 'OAuth ready' : vaultKeyMissing ? 'Encryption key needed' : 'Setup needed') : (isLoading ? 'Checking…' : 'Unavailable');
           return (
             <article key={provider} className={`flex min-h-[250px] flex-col p-4 transition-colors duration-200 hover:bg-slate-50/70 sm:p-5 ${details.accent}`}>
               <div className="flex items-start justify-between gap-3">
@@ -196,7 +197,7 @@ export function NativeAppConnections() {
               <div className="mt-auto pt-4">
                 <Button type="button" variant={configured ? 'outline' : 'secondary'} size="sm" className="w-full gap-2" disabled={!data || !configured || isLoading || busyProvider !== null} onClick={() => void connect(provider)}>
                   {busyProvider === provider ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : accounts.length ? <RefreshCw className="h-3.5 w-3.5" /> : <ShieldCheck className="h-3.5 w-3.5" />}
-                  {busyProvider === provider ? 'Opening provider…' : !data ? 'Connection status unavailable' : configured ? (accounts.length ? 'Add or reconnect' : 'Connect account') : 'Provider app not configured'}
+                  {busyProvider === provider ? 'Opening provider…' : !data ? 'Connection status unavailable' : configured ? (accounts.length ? 'Add or reconnect' : 'Connect account') : vaultKeyMissing ? 'Encryption key required' : 'Provider app not configured'}
                 </Button>
                 {!configured && config?.setupHint && <p className="mt-2 text-[10px] leading-4 text-slate-500">{config.setupHint}</p>}
                 <p className="mt-2 flex items-start gap-1.5 text-[10px] leading-4 text-slate-500"><CircleHelp className="mt-0.5 h-3 w-3 shrink-0" />{details.actionBoundary}</p>
@@ -207,7 +208,7 @@ export function NativeAppConnections() {
       </div>
 
       {isLoading && <div className="flex items-center justify-center gap-2 border-t border-slate-100 bg-slate-50/60 px-5 py-3 text-xs text-slate-500" role="status"><LoaderCircle className="h-3.5 w-3.5 animate-spin" />Loading server connection status…</div>}
-      <div className="flex items-start gap-2 border-t border-slate-100 bg-slate-50/60 px-5 py-3 text-[10px] leading-4 text-slate-500 sm:px-6"><ExternalLink className="mt-0.5 h-3 w-3 shrink-0" />OAuth client secrets stay server-side. A missing provider app disables Connect; FlowPilot never substitutes workflow secrets or a fake connection.</div>
+      <div className="flex items-start gap-2 border-t border-slate-100 bg-slate-50/60 px-5 py-3 text-[10px] leading-4 text-slate-500 sm:px-6"><ExternalLink className="mt-0.5 h-3 w-3 shrink-0" />OAuth client secrets stay server-side. A missing provider app or encryption key disables Connect; FlowPilot never substitutes workflow secrets or a fake connection.</div>
     </section>
   );
 }
