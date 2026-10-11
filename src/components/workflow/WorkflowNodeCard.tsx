@@ -1,4 +1,5 @@
 import { ArrowUpRight, Check, CircleAlert, GitBranch, LoaderCircle, Sparkles, Zap } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import type { FlowNode } from './flow-types';
 
@@ -10,8 +11,20 @@ const categoryStyle = {
 } as const;
 
 export function WorkflowNodeCard({ data, selected, isConnectable }: NodeProps<FlowNode>) {
+  const [isNarrowViewport, setIsNarrowViewport] = useState(() => window.matchMedia('(max-width: 1023px)').matches);
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 1023px)');
+    const updateViewport = () => setIsNarrowViewport(media.matches);
+    updateViewport();
+    media.addEventListener('change', updateViewport);
+    return () => media.removeEventListener('change', updateViewport);
+  }, []);
+
   const style = categoryStyle[data.nodeType];
   const Icon = style.icon;
+  const targetPosition = isNarrowViewport ? Position.Top : Position.Left;
+  const sourcePosition = isNarrowViewport ? Position.Bottom : Position.Right;
+  const handleSize = isNarrowViewport ? '!h-5 !w-5' : '!h-3 !w-3';
   const executionStatus = data.executionStatus;
   const statusIcon = executionStatus === 'success' ? Check : executionStatus === 'error' ? CircleAlert : executionStatus === 'running' ? LoaderCircle : null;
   const StatusIcon = statusIcon;
@@ -21,10 +34,10 @@ export function WorkflowNodeCard({ data, selected, isConnectable }: NodeProps<Fl
       {data.nodeType !== 'trigger' && (
         <Handle
           type="target"
-          position={Position.Left}
+          position={targetPosition}
           id="in"
           isConnectable={isConnectable}
-          className="!h-3 !w-3 !border-2 !border-white !bg-slate-500"
+          className={`${handleSize} !border-2 !border-white !bg-slate-500`}
         />
       )}
       <div className="flex items-center gap-3 px-3 py-3">
@@ -42,17 +55,17 @@ export function WorkflowNodeCard({ data, selected, isConnectable }: NodeProps<Fl
       <div className={`h-1 w-full rounded-b-xl ${style.accent}`} />
       {data.category === 'condition' ? (
         <>
-          <Handle type="source" position={Position.Right} id="true" isConnectable={isConnectable} style={{ top: '25%' }} title="True" className="!h-3 !w-3 !border-2 !border-white !bg-emerald-500" />
-          <Handle type="source" position={Position.Right} id="out" isConnectable={isConnectable} style={{ top: '50%' }} title="Unconditional (legacy)" className="!h-3 !w-3 !border-2 !border-white !bg-primary" />
-          <Handle type="source" position={Position.Right} id="false" isConnectable={isConnectable} style={{ top: '75%' }} title="False" className="!h-3 !w-3 !border-2 !border-white !bg-rose-500" />
+          <Handle type="source" position={sourcePosition} id="true" isConnectable={isConnectable} style={isNarrowViewport ? { left: '25%' } : { top: '25%' }} title="True" className={`${handleSize} !border-2 !border-white !bg-emerald-500`} />
+          <Handle type="source" position={sourcePosition} id="out" isConnectable={isConnectable} style={isNarrowViewport ? { left: '50%' } : { top: '50%' }} title="Unconditional (legacy)" className={`${handleSize} !border-2 !border-white !bg-primary`} />
+          <Handle type="source" position={sourcePosition} id="false" isConnectable={isConnectable} style={isNarrowViewport ? { left: '75%' } : { top: '75%' }} title="False" className={`${handleSize} !border-2 !border-white !bg-rose-500`} />
         </>
       ) : (
         <Handle
           type="source"
-          position={Position.Right}
+          position={sourcePosition}
           id="out"
           isConnectable={isConnectable}
-          className="!h-3 !w-3 !border-2 !border-white !bg-primary"
+          className={`${handleSize} !border-2 !border-white !bg-primary`}
         />
       )}
     </div>

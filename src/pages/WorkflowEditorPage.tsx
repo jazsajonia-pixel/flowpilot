@@ -447,7 +447,7 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
   }
 
   return (
-    <main className="flex min-h-screen flex-col bg-background text-foreground lg:h-screen lg:min-h-[640px] lg:overflow-hidden">
+    <main className="flex h-[100dvh] min-h-0 flex-col overflow-hidden bg-background text-foreground lg:h-screen lg:min-h-[640px]">
       <header className="z-20 flex min-h-16 shrink-0 items-center gap-3 border-b bg-card px-3 shadow-sm sm:px-5">
         <Button type="button" variant="ghost" size="icon" className="h-9 w-9 shrink-0" aria-label="Back to workflows" onClick={handleBack}>
           <ArrowLeft className="h-4 w-4" />
@@ -526,7 +526,8 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
 
       {demo && (
         <div className="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-xs text-amber-950">
-          Sample preview mode. Move nodes, connect them, or rename one to try the editor; your changes are not saved.
+          <span className="sm:hidden">Preview only · changes are not saved. Tap a step to add it.</span>
+          <span className="hidden sm:inline">Sample preview mode. Move nodes, connect them, or rename one to try the editor; your changes are not saved.</span>
         </div>
       )}
       {saveError && !demo && (
