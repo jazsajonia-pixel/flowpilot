@@ -1,8 +1,8 @@
 # FlowPilot AI
 
-> An AI-Powered Visual Workflow Automation Platform
+> A visual workflow builder with AI-assisted steps and server-side execution.
 
-FlowPilot AI is a modern, web-based visual automation platform that enables users to connect triggers, AI intelligence models, logic conditions, database operations, and external services into powerful automated workflows.
+FlowPilot lets users assemble workflows from triggers, AI steps, conditions, and actions, then run them through a validated execution engine. The current implementation includes webhook and scheduled triggers, bring-your-own AI providers, and a growing set of built-in actions; native third-party app connectors remain future work.
 
 ---
 
