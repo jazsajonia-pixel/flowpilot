@@ -6,6 +6,8 @@ export interface FlowNodeData extends Record<string, unknown> {
   category: NodeCategory;
   label: string;
   config: Record<string, unknown>;
+  /** Ephemeral display state. Graph mapping intentionally excludes it from persistence. */
+  executionStatus?: 'running' | 'success' | 'error' | 'skipped';
 }
 
 export type FlowNode = Node<FlowNodeData, 'workflowNode'>;

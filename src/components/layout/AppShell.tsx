@@ -27,12 +27,12 @@ export function AppShell() {
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Main Layout Area */}
-      <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col overflow-hidden">
         <Header
           onMobileMenuOpen={() => setSidebarOpen(true)}
           pageTitle={currentTitle}
         />
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto bg-background/70">
           <PageContainer>
             <Outlet />
           </PageContainer>

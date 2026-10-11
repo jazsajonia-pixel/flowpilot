@@ -1,4 +1,4 @@
-import { ArrowUpRight, GitBranch, Sparkles, Zap } from 'lucide-react';
+import { ArrowUpRight, Check, CircleAlert, GitBranch, LoaderCircle, Sparkles, Zap } from 'lucide-react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import type { FlowNode } from './flow-types';
 
@@ -12,9 +12,12 @@ const categoryStyle = {
 export function WorkflowNodeCard({ data, selected, isConnectable }: NodeProps<FlowNode>) {
   const style = categoryStyle[data.nodeType];
   const Icon = style.icon;
+  const executionStatus = data.executionStatus;
+  const statusIcon = executionStatus === 'success' ? Check : executionStatus === 'error' ? CircleAlert : executionStatus === 'running' ? LoaderCircle : null;
+  const StatusIcon = statusIcon;
 
   return (
-    <div className={`relative min-w-40 rounded-xl border bg-card text-card-foreground shadow-lg transition-shadow ${selected ? 'ring-2 ring-primary ring-offset-2' : 'hover:shadow-xl'}`}>
+    <div className={`flowpilot-node relative min-w-40 rounded-[15px] border border-slate-200 bg-white text-card-foreground shadow-lg transition-shadow ${executionStatus ? `flowpilot-node--${executionStatus}` : ''} ${selected ? 'ring-2 ring-primary ring-offset-2' : 'hover:shadow-xl'}`}>
       {data.nodeType !== 'trigger' && (
         <Handle
           type="target"
@@ -28,12 +31,13 @@ export function WorkflowNodeCard({ data, selected, isConnectable }: NodeProps<Fl
         <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${style.tone}`}>
           <Icon className="h-4 w-4" aria-hidden="true" />
         </span>
-        <span className="min-w-0">
-          <span className="block max-w-32 truncate text-sm font-semibold">{data.label}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block max-w-32 truncate text-[12px] font-semibold text-slate-900">{data.label}</span>
           <span className="mt-0.5 block text-[10px] uppercase tracking-wider text-muted-foreground">
             {data.category.replace(/_/g, ' ')}
           </span>
         </span>
+        {StatusIcon && <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${executionStatus === 'success' ? 'bg-emerald-50 text-emerald-600' : executionStatus === 'error' ? 'bg-rose-50 text-rose-600' : executionStatus === 'running' ? 'bg-violet-50 text-violet-600' : 'bg-slate-100 text-slate-500'}`} title={`Step ${executionStatus}`}><StatusIcon className={`h-3.5 w-3.5 ${executionStatus === 'running' ? 'animate-spin' : ''}`} /></span>}
       </div>
       <div className={`h-1 w-full rounded-b-xl ${style.accent}`} />
       {data.category === 'condition' ? (

@@ -58,6 +58,7 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
   const [isRunning, setIsRunning] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
   const [latestRun, setLatestRun] = useState<WorkflowExecutionSummary | null>(null);
+  const [visibleRunLogs, setVisibleRunLogs] = useState(0);
   const [isActivationSaving, setIsActivationSaving] = useState(false);
   const [activationError, setActivationError] = useState<string | null>(null);
   const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle');
@@ -144,6 +145,15 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
       .catch(() => { if (active) setAICredentials([]); });
     return () => { active = false; };
   }, [demo, workflowId]);
+
+  useEffect(() => {
+    if (!latestRun) return;
+    setVisibleRunLogs(0);
+    const timers = latestRun.logs.map((_, index) =>
+      window.setTimeout(() => setVisibleRunLogs(index + 1), (index + 1) * 360),
+    );
+    return () => timers.forEach((timer) => window.clearTimeout(timer));
+  }, [latestRun]);
 
   useEffect(() => {
     graphSnapshotRef.current = {
@@ -247,6 +257,8 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
     }
 
     setIsRunning(true);
+    setLatestRun(null);
+    setVisibleRunLogs(0);
     setRunError(null);
     try {
       await saveGraphNow();
@@ -407,6 +419,12 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
         : saveState === 'error'
           ? 'Save failed'
           : 'All changes saved';
+  const shownStatuses = new Map(latestRun?.logs.slice(0, visibleRunLogs).map((log) => [log.nodeId, log.status]) ?? []);
+  const displayNodes = nodes.map((node) => ({
+    ...node,
+    data: { ...node.data, ...(shownStatuses.has(node.id) ? { executionStatus: shownStatuses.get(node.id) } : {}) },
+  }));
+  const displayEdges = isRunning ? edges.map((edge) => ({ ...edge, animated: true })) : edges;
 
   if (isLoading) {
     return <main className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">Loading workflow…</main>;
@@ -517,6 +535,14 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
           <Button size="sm" variant="outline" onClick={() => void saveGraphNow().catch(() => undefined)}>Retry save</Button>
         </div>
       )}
+      {isRunning && !demo && (
+        <div className="flex shrink-0 items-center gap-3 border-b border-violet-100 bg-violet-50/90 px-4 py-2.5 text-xs text-violet-900" role="status" aria-live="polite">
+          <LoaderCircle className="h-4 w-4 animate-spin text-violet-600" />
+          <span className="font-semibold">Workflow running</span>
+          <span className="hidden text-violet-700/80 sm:inline">Steps are executing on the FlowPilot runtime. Results will animate onto the canvas when returned.</span>
+          <span className="ml-auto h-1 w-24 overflow-hidden rounded-full bg-violet-200"><span className="block h-full w-1/2 animate-pulse rounded-full bg-violet-600" /></span>
+        </div>
+      )}
       {!demo && hasWebhookTrigger && webhookUrl && (
         <section className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b bg-sky-50 px-4 py-2 text-xs text-sky-950">
           <div className="min-w-0">
@@ -550,12 +576,12 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
       {latestRun && !demo && (
         <section className={`max-h-40 shrink-0 overflow-y-auto border-b px-4 py-2 text-xs ${latestRun.status === 'completed' ? 'bg-emerald-50 text-emerald-950' : 'bg-rose-50 text-rose-950'}`} aria-live="polite">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <strong>Latest run: {latestRun.status} · {latestRun.logs.filter((log) => log.status === 'success').length} successful steps</strong>
+            <strong>Latest run: {latestRun.status} · {Math.min(visibleRunLogs, latestRun.logs.length)} / {latestRun.logs.length} steps revealed</strong>
             <span className="font-mono text-[10px]">{latestRun.id.slice(0, 8)}</span>
           </div>
           {latestRun.error && <p className="mt-1" role="alert">{latestRun.error}</p>}
           <ol className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-            {latestRun.logs.map((log) => (
+            {latestRun.logs.slice(0, visibleRunLogs).map((log) => (
               <li key={`${log.nodeId}-${log.timestamp}`}>
                 {nodes.find((node) => node.id === log.nodeId)?.data.label ?? 'Workflow step'}: {log.status}
                 {log.error ? ` — ${log.error}` : ''}
@@ -567,10 +593,11 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
 
       <ReactFlowProvider>
         <WorkflowCanvas
-          nodes={nodes}
-          edges={edges}
+          nodes={displayNodes}
+          edges={displayEdges}
           selectedNodeId={selectedNodeId}
           aiCredentials={aiCredentials}
+          isExecuting={isRunning}
           onNodesChange={handleNodesChange}
           onEdgesChange={handleEdgesChange}
           onConnect={handleConnect}
