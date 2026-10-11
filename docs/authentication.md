@@ -23,15 +23,21 @@ Auth mutation endpoints accept same-origin JSON only. They validate the `Origin`
 - The `password_hash` column is nullable to keep the schema upgrade safe for any Phase 2B identity rows that predate local password authentication. Such rows cannot log in with a password until an approved credential is provisioned.
 - No signing secret is required for opaque sessions. Do not add the session token or password hash to client state, logs, URLs, or frontend bundles.
 
+## OAuth callback browser binding
+
+The connected-app OAuth flow does not weaken or replace the `fp_session` cookie. Since provider callbacks return as top-level GET navigations, connect initiation sets a separate, random, `HttpOnly; SameSite=Lax; Secure` (on HTTPS), host-only cookie scoped only to `/api/integrations/oauth/<provider>/callback`, with a ten-minute lifetime. The database stores the browser binding only as a SHA-256 digest alongside the SHA-256 state digest, initiating session-token hash, provider, exact redirect URI, expiry, and encrypted PKCE verifier. The callback atomically consumes the transaction, compares the browser binding, and rechecks that the original server-side session is still active before exchanging a code. Provider denial and validation failures are returned to the app without reflecting raw provider error text.
+
+Provider access/refresh tokens are encrypted with the existing `CREDENTIAL_ENCRYPTION_KEY` and remain in the server-only credentials table. OAuth credentials are filtered out of all AI credential listing, deletion, quota, and resolver paths. See [`oauth-provider-setup.md`](oauth-provider-setup.md) for provider registration requirements and current action limits.
+
 ## Deliberate boundaries and launch note
 
 Phase 2C established identity and session lifecycle. Phase 2D now protects the workflow-metadata API and enforces workflow ownership; it does not yet guard placeholder dashboard pages or expose graph, execution, integration, or credential APIs. Password reset, email verification, MFA, breached-password screening, rate limiting, and production security hardening are not included. Registration/login are public endpoints, so add and verify abuse/rate controls before exposing public production signups; Phase 9 tracks broader rate limiting and hardening. Do not treat the current UI session indicator as an access-control boundary.
 
-The migration is generated and checked locally, but has not been applied to a live Netlify Database in this environment.
+The auth migration was generated and checked locally. OAuth adds migration `0005_oauth_state`; it must be applied to both the staging and production Neon databases before enabling OAuth provider environment values. A local Vite-only server does not expose the Vercel `/api/*` dispatcher routes.
 
 ## Development and verification
 
-Run the frontend and Functions through Netlify Dev so `/api/auth/*` routes resolve to the Netlify Functions. The standalone Vite `npm run dev` server does not provide those function routes.
+Run the frontend and Functions through the configured Vercel runtime/dispatcher when validating `/api/auth/*` or `/api/integrations/*`. The standalone Vite `npm run dev` server does not provide those function routes.
 
 ```sh
 npm run lint

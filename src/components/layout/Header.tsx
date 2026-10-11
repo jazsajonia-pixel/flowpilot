@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, Bell, Search, User } from 'lucide-react';
+import { Menu, Search, User, Plus } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Dropdown } from '@/components/ui/dropdown';
@@ -74,7 +74,7 @@ export function Header({ onMobileMenuOpen, pageTitle = 'Dashboard' }: HeaderProp
     : 'FP';
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-border bg-card/80 px-4 backdrop-blur sm:px-6">
+    <header className="sticky top-0 z-30 flex h-[76px] w-full items-center justify-between border-b border-border/80 bg-white/85 px-4 backdrop-blur-xl sm:px-7">
       <div className="flex items-center space-x-3">
         <button
           onClick={onMobileMenuOpen}
@@ -87,17 +87,13 @@ export function Header({ onMobileMenuOpen, pageTitle = 'Dashboard' }: HeaderProp
       </div>
 
       <div className="flex items-center space-x-3">
-        <div className="hidden w-48 items-center space-x-2 rounded-md border border-input bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground sm:flex lg:w-64">
+        <button type="button" onClick={() => navigate('/workflows')} className="hidden w-48 items-center gap-2 rounded-xl border border-border/80 bg-slate-50/80 px-3 py-2 text-left text-xs text-muted-foreground transition-all hover:border-violet-200 hover:bg-white hover:text-foreground sm:flex lg:w-64" aria-label="Browse and search workflows">
           <Search className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">Search workflows...</span>
-          <kbd className="pointer-events-none ml-auto inline-flex h-4 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100">
-            ⌘K
-          </kbd>
-        </div>
-        <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground">
-          <Bell className="h-4 w-4" />
-          <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary" />
-          <span className="sr-only">Notifications</span>
+          <span className="truncate">Find a workflow</span>
+          <kbd className="ml-auto rounded-md border border-border bg-white px-1.5 py-0.5 font-mono text-[9px]">⌘ K</kbd>
+        </button>
+        <Button size="sm" className="hidden h-9 gap-2 rounded-xl px-3 shadow-sm shadow-primary/15 sm:inline-flex" onClick={() => navigate('/workflows')}>
+          <Plus className="h-3.5 w-3.5" /> New workflow
         </Button>
         <Dropdown
           trigger={

@@ -1,6 +1,6 @@
 import type { Config } from '@netlify/functions';
 import { randomUUID } from 'node:crypto';
-import { desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
 import { credentials, users } from '../../db/schema';
@@ -57,7 +57,7 @@ export default async function aiCredentials(request: Request): Promise<Response>
       const records = await db
         .select({ id: credentials.id, provider: credentials.provider, name: credentials.name, createdAt: credentials.createdAt, updatedAt: credentials.updatedAt })
         .from(credentials)
-        .where(eq(credentials.ownerId, user.id))
+        .where(and(eq(credentials.ownerId, user.id), isNull(credentials.integrationId), inArray(credentials.provider, AI_PROVIDER_IDS)))
         .orderBy(desc(credentials.updatedAt), desc(credentials.id));
       return jsonResponse(200, { credentials: records.map(toCredentialSummary) });
     }
@@ -79,7 +79,7 @@ export default async function aiCredentials(request: Request): Promise<Response>
       insert into ${credentials} (id, owner_id, provider, name, encrypted_payload)
       select ${id}, ${user.id}, ${parsed.data.provider}, ${parsed.data.name}, ${encryptedPayload}
       where exists (select 1 from ${users} where ${users.id} = ${user.id})
-        and (select count(*) from ${credentials} where ${credentials.ownerId} = ${user.id}) < ${MAX_CREDENTIALS_PER_USER}
+        and (select count(*) from ${credentials} where ${credentials.ownerId} = ${user.id} and ${credentials.integrationId} is null and ${credentials.provider} in (${sql.join(AI_PROVIDER_IDS.map((id) => sql`${id}`), sql`, `)})) < ${MAX_CREDENTIALS_PER_USER}
       returning id, provider, name, created_at, updated_at
     `);
     const row = inserted.rows[0];

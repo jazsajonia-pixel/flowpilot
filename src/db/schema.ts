@@ -220,12 +220,35 @@ export const credentials = pgTable(
   },
   (table) => [
     index('credentials_owner_provider_idx').on(table.ownerId, table.provider),
-    index('credentials_integration_id_idx').on(table.integrationId),
+    uniqueIndex('credentials_integration_id_unique').on(table.integrationId),
     foreignKey({
       name: 'credentials_integration_owner_fk',
       columns: [table.integrationId, table.ownerId],
       foreignColumns: [integrations.id, integrations.ownerId],
     }).onDelete('cascade'),
+  ],
+);
+
+export const oauthStates = pgTable(
+  'oauth_states',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    provider: varchar('provider', { length: 32 }).notNull(),
+    stateHash: varchar('state_hash', { length: 64 }).notNull(),
+    sessionTokenHash: varchar('session_token_hash', { length: 64 }).notNull(),
+    browserBindingHash: varchar('browser_binding_hash', { length: 64 }).notNull(),
+    encryptedCodeVerifier: text('encrypted_code_verifier').notNull(),
+    redirectUri: varchar('redirect_uri', { length: 512 }).notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('oauth_states_state_hash_unique').on(table.stateHash),
+    index('oauth_states_owner_expires_idx').on(table.ownerId, table.expiresAt),
+    index('oauth_states_expires_at_idx').on(table.expiresAt),
   ],
 );
 

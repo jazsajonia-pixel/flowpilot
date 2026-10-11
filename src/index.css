@@ -4,42 +4,84 @@
 
 @layer base {
   :root {
-    --background: 222 47% 98%;
-    --foreground: 222 47% 11%;
-
+    --background: 220 33% 98%;
+    --foreground: 226 35% 13%;
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-
+    --card-foreground: 226 35% 13%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-
-    --primary: 221 83% 53%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222 47% 11%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222 47% 11%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221 83% 53%;
-
-    --radius: 0.5rem;
+    --popover-foreground: 226 35% 13%;
+    --primary: 248 82% 61%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 26% 95%;
+    --secondary-foreground: 226 35% 18%;
+    --muted: 220 26% 95%;
+    --muted-foreground: 220 11% 46%;
+    --accent: 244 80% 96%;
+    --accent-foreground: 247 52% 35%;
+    --destructive: 0 72% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 20% 90%;
+    --input: 220 20% 88%;
+    --ring: 248 82% 61%;
+    --radius: 0.8rem;
   }
 
-  * {
-    @apply border-border;
-  }
+  * { @apply border-border; }
+
+  html { scroll-behavior: smooth; }
 
   body {
-    @apply bg-background text-foreground antialiased min-h-screen font-sans;
+    @apply min-h-screen bg-background font-sans text-foreground antialiased;
+    background-image: radial-gradient(ellipse at 92% 0%, rgba(129, 110, 255, 0.055), transparent 34rem);
   }
+
+  ::selection { background: rgba(124, 98, 255, 0.2); }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+}
+
+@keyframes flowpilot-node-enter {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes flowpilot-node-running {
+  0%, 100% { box-shadow: 0 8px 24px rgba(89, 71, 202, 0.12), 0 0 0 0 rgba(124, 98, 255, 0.12); }
+  50% { box-shadow: 0 12px 30px rgba(89, 71, 202, 0.2), 0 0 0 6px rgba(124, 98, 255, 0.08); }
+}
+
+@keyframes flowpilot-result-pop {
+  0% { transform: scale(0.97); }
+  65% { transform: scale(1.025); }
+  100% { transform: scale(1); }
+}
+
+@keyframes flowpilot-shimmer {
+  from { background-position: 180% 0; }
+  to { background-position: -80% 0; }
+}
+
+.flowpilot-node { animation: flowpilot-node-enter 240ms cubic-bezier(0.2, 0.75, 0.25, 1) both; }
+.flowpilot-connect-enter { animation: flowpilot-node-enter 260ms cubic-bezier(0.2, 0.75, 0.25, 1) both; }
+.flowpilot-node--running { border-color: #8b78ff !important; animation: flowpilot-node-running 1.25s ease-in-out infinite; }
+.flowpilot-node--success { border-color: #34b88a !important; animation: flowpilot-result-pop 360ms cubic-bezier(0.2, 0.75, 0.25, 1) both; }
+.flowpilot-node--error { border-color: #ee6b78 !important; animation: flowpilot-result-pop 360ms cubic-bezier(0.2, 0.75, 0.25, 1) both; }
+.flowpilot-node--skipped { border-color: #a7afbd !important; }
+.flowpilot-drop-active {
+  background-color: #f5f3ff !important;
+  background-image: radial-gradient(circle, rgba(123, 102, 246, 0.22) 1px, transparent 1px) !important;
+  background-size: 22px 22px !important;
+  box-shadow: inset 0 0 0 2px rgba(123, 102, 246, 0.32);
+}
+.flowpilot-flow-running .react-flow__edge.animated path {
+  stroke: #8270ff;
+  stroke-width: 2.5;
+  stroke-dasharray: 7 5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }

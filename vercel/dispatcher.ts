@@ -16,6 +16,10 @@ import workflowExecutions from '../src/server/vercel-functions/workflow-executio
 import webhookTrigger from '../src/server/vercel-functions/webhook-trigger';
 import scheduler from '../src/server/vercel-functions/scheduler';
 import dataRecords from '../src/server/vercel-functions/data-records';
+import integrations from '../src/server/vercel-functions/integrations';
+import integrationConnect from '../src/server/vercel-functions/integration-connect';
+import integrationCallback from '../src/server/vercel-functions/integration-callback';
+import integrationAccount from '../src/server/vercel-functions/integration-account';
 import { getExecution, listExecutions, retryExecution } from '../src/server/vercel-functions/executions';
 
 type WebHandler = (request: Request, context?: { params: Record<string, string> }) => Promise<Response>;
@@ -38,6 +42,10 @@ const routeTable: Array<{ match: RegExp; module: RouteModule; params?: (match: R
   { match: /^\/api\/executions\/([^/]+)\/retry\/?$/, module: { default: retryExecution }, params: (match) => ({ executionId: match[1] }) },
   { match: /^\/api\/executions\/([^/]+)\/?$/, module: { default: getExecution }, params: (match) => ({ executionId: match[1] }) },
   { match: /^\/api\/data-records\/?$/, module: { default: dataRecords } },
+  { match: /^\/api\/integrations\/oauth\/([^/]+)\/callback\/?$/, module: { default: integrationCallback }, params: (match) => ({ provider: match[1] }) },
+  { match: /^\/api\/integrations\/([^/]+)\/connect\/?$/, module: { default: integrationConnect }, params: (match) => ({ provider: match[1] }) },
+  { match: /^\/api\/integrations\/([^/]+)\/([^/]+)\/?$/, module: { default: integrationAccount }, params: (match) => ({ provider: match[1], integrationId: match[2] }) },
+  { match: /^\/api\/integrations\/?$/, module: { default: integrations } },
   { match: /^\/api\/internal\/schedule-tick\/?$/, module: { default: scheduler } },
   { match: /^\/api\/health\/?$/, module: { handler: health } },
   { match: /^\/api\/db-health\/?$/, module: { handler: dbHealth } },

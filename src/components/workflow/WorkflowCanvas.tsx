@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, type DragEvent } from 'react';
+import { useCallback, useMemo, useRef, useState, type DragEvent } from 'react';
 import {
   Background,
   BackgroundVariant,
@@ -11,7 +11,7 @@ import {
   type NodeChange,
   type NodeTypes,
 } from '@xyflow/react';
-import { ArrowUpRight, GitBranch, Plus, Sparkles, Trash2, Zap } from 'lucide-react';
+import { ArrowUpRight, GitBranch, GripVertical, Plus, Search, Sparkles, Trash2, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NodeConfigurationEditor } from './NodeConfigurationEditor';
@@ -27,6 +27,7 @@ interface WorkflowCanvasProps {
   edges: FlowEdge[];
   selectedNodeId: string | null;
   aiCredentials?: AICredentialSummary[];
+  isExecuting?: boolean;
   readOnly?: boolean;
   onNodesChange: (changes: NodeChange<FlowNode>[]) => void;
   onEdgesChange: (changes: EdgeChange<FlowEdge>[]) => void;
@@ -49,6 +50,8 @@ const nodeTypeOrder: NodeType[] = ['trigger', 'ai', 'logic', 'action'];
 
 export function WorkflowCanvas(props: WorkflowCanvasProps) {
   const flowContainerRef = useRef<HTMLDivElement>(null);
+  const [nodeQuery, setNodeQuery] = useState('');
+  const [isDragOver, setIsDragOver] = useState(false);
   const { screenToFlowPosition } = useReactFlow<FlowNode, FlowEdge>();
   const selectedNode = props.nodes.find((node) => node.id === props.selectedNodeId) ?? null;
   const graphNodes = useMemo(
@@ -83,10 +86,12 @@ export function WorkflowCanvas(props: WorkflowCanvasProps) {
   const onDragOver = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
+    setIsDragOver(true);
   };
 
   const onDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
+    setIsDragOver(false);
     const category = event.dataTransfer.getData('application/flowpilot-node');
     const definition = NODE_CATALOG.find((candidate) => candidate.category === category);
     if (!definition || (definition.type === 'trigger' && hasTrigger)) return;
@@ -95,19 +100,24 @@ export function WorkflowCanvas(props: WorkflowCanvasProps) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-      <aside className="flex max-h-40 shrink-0 gap-2 overflow-x-auto border-b bg-card p-3 lg:max-h-none lg:w-64 lg:flex-col lg:overflow-y-auto lg:overflow-x-hidden lg:border-b-0 lg:border-r">
-        <div className="hidden pb-2 lg:block">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Node library</h2>
-          <p className="mt-1 text-xs text-muted-foreground">Drag a node onto the canvas, or tap to add it.</p>
+      <aside className="flex max-h-44 shrink-0 gap-2 overflow-x-auto border-b bg-white p-3 lg:max-h-none lg:w-[264px] lg:flex-col lg:gap-0 lg:overflow-y-auto lg:overflow-x-hidden lg:border-b-0 lg:border-r lg:p-4">
+        <div className="hidden pb-3 lg:block">
+          <div className="flex items-center justify-between"><h2 className="text-[11px] font-bold uppercase tracking-[0.13em] text-slate-800">Step library</h2><span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold text-slate-500">{NODE_CATALOG.length}</span></div>
+          <p className="mt-1 text-[10px] leading-4 text-slate-500">Drag onto the canvas, or select to add.</p>
+          <label className="relative mt-3 block">
+            <Search className="pointer-events-none absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
+            <Input value={nodeQuery} onChange={(event) => setNodeQuery(event.target.value)} placeholder="Find a step…" aria-label="Search workflow steps" className="h-9 rounded-lg border-slate-200 bg-slate-50 pl-8 text-xs focus:bg-white" />
+          </label>
         </div>
         {nodeTypeOrder.map((type) => {
           const group = groupStyle[type];
           const GroupIcon = group.icon;
-          const definitions = NODE_CATALOG.filter((item) => item.type === type);
+          const definitions = NODE_CATALOG.filter((item) => item.type === type && `${item.label} ${item.description}`.toLowerCase().includes(nodeQuery.trim().toLowerCase()));
+          if (definitions.length === 0) return null;
           return (
-            <section key={type} className="min-w-52 lg:min-w-0">
-              <h3 className={`mb-1 flex items-center gap-2 px-1 text-[11px] font-bold uppercase tracking-wider ${group.className}`}>
-                <GroupIcon className="h-3.5 w-3.5" aria-hidden="true" /> {group.label}
+            <section key={type} className="min-w-52 lg:mb-4 lg:min-w-0">
+              <h3 className={`mb-1.5 flex items-center gap-2 px-1 text-[9px] font-bold uppercase tracking-[0.13em] ${group.className}`}>
+                <GroupIcon className="h-3 w-3" aria-hidden="true" /> {group.label}
               </h3>
               <div className="flex gap-2 lg:flex-col">
                 {definitions.map((definition) => {
@@ -120,11 +130,12 @@ export function WorkflowCanvas(props: WorkflowCanvasProps) {
                       disabled={disabled}
                       onDragStart={(event) => onDragStart(event, definition)}
                       onClick={() => addAtCenter(definition)}
-                      className="min-w-44 rounded-lg border bg-background px-3 py-2 text-left transition-colors hover:border-primary/50 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-45 lg:min-w-0"
+                      className="group flex min-w-44 items-center gap-2.5 rounded-xl border border-slate-200/80 bg-white px-2.5 py-2 text-left transition-all duration-150 hover:-translate-y-px hover:border-violet-200 hover:bg-violet-50/50 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-45 lg:min-w-0"
                       title={definition.description}
                     >
-                      <span className="block truncate text-xs font-semibold">{definition.label}</span>
-                      <span className="mt-0.5 hidden text-[10px] leading-4 text-muted-foreground lg:block">{definition.description}</span>
+                      <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${type === 'trigger' ? 'bg-amber-50 text-amber-600' : type === 'ai' ? 'bg-violet-50 text-violet-600' : type === 'logic' ? 'bg-sky-50 text-sky-600' : 'bg-emerald-50 text-emerald-600'}`}><GroupIcon className="h-3.5 w-3.5" aria-hidden="true" /></span>
+                      <span className="min-w-0 flex-1"><span className="block truncate text-[10px] font-semibold text-slate-800">{definition.label}</span><span className="mt-0.5 hidden truncate text-[9px] leading-4 text-slate-500 lg:block">{definition.description}</span></span>
+                      <GripVertical className="hidden h-3.5 w-3.5 shrink-0 text-slate-300 group-hover:text-violet-400 lg:block" aria-hidden="true" />
                     </button>
                   );
                 })}
@@ -132,15 +143,21 @@ export function WorkflowCanvas(props: WorkflowCanvasProps) {
             </section>
           );
         })}
-        {hasTrigger && <p className="hidden rounded-md bg-muted px-2 py-2 text-[11px] text-muted-foreground lg:block">This workflow already has a trigger.</p>}
+        {nodeQuery && !NODE_CATALOG.some((item) => `${item.label} ${item.description}`.toLowerCase().includes(nodeQuery.trim().toLowerCase())) && <p className="hidden rounded-xl border border-dashed border-slate-200 p-3 text-center text-[10px] text-slate-500 lg:block">No steps match that search.</p>}
+        {hasTrigger && <p className="hidden rounded-lg bg-amber-50 px-2.5 py-2 text-[10px] leading-4 text-amber-800 lg:block">This workflow already has a trigger.</p>}
       </aside>
 
       <div
         ref={flowContainerRef}
-        className="relative min-h-[55vh] min-w-0 flex-1 bg-slate-50 lg:min-h-0"
+        className={`relative min-h-[55vh] min-w-0 flex-1 bg-[#f8f9fd] transition-colors duration-200 lg:min-h-0 ${isDragOver ? 'flowpilot-drop-active' : ''} ${props.isExecuting ? 'flowpilot-flow-running' : ''}`}
         onDragOver={onDragOver}
+        onDragLeave={(event) => {
+          const nextTarget = event.relatedTarget as Node | null;
+          if (!nextTarget || !event.currentTarget.contains(nextTarget)) setIsDragOver(false);
+        }}
         onDrop={onDrop}
       >
+        {isDragOver && <div className="pointer-events-none absolute inset-x-0 top-4 z-20 mx-auto w-fit rounded-full border border-violet-200 bg-white/90 px-4 py-2 text-[11px] font-semibold text-violet-700 shadow-lg shadow-violet-950/10">Release to add this step</div>}
         {props.nodes.length === 0 && (
           <div className="pointer-events-none absolute inset-x-4 top-5 z-10 mx-auto max-w-md rounded-xl border bg-white/90 p-4 text-center shadow-sm">
             <p className="text-sm font-semibold">Start with a trigger</p>
@@ -168,7 +185,7 @@ export function WorkflowCanvas(props: WorkflowCanvasProps) {
           minZoom={0.2}
           maxZoom={1.5}
         >
-          <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#cbd5e1" />
+          <Background variant={BackgroundVariant.Dots} gap={22} size={1} color="#d8dbea" />
           <Controls position="bottom-left" showInteractive={false} />
           <MiniMap
             position="bottom-right"

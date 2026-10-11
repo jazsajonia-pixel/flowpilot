@@ -6,7 +6,7 @@ This is the **authoritative product roadmap** for FlowPilot. Update phase status
 
 ## Current status snapshot
 
-**Last verified:** 2026-10-10. **Current milestone:** Phase 8 — Execution Monitoring, Logs & Reliability (**in progress**). The last runtime-changing revision is `527a749` (PR #37); Vercel reports its production deployment as READY, and the frontend, liveness, and Neon health probes pass on the repository-linked domain. The requested `flowpilot-app.vercel.app` still serves the legacy app because its alias is controlled outside the connected Vercel project.
+**Last verified:** 2026-10-12. **Current milestone:** Phase 8 — Execution Monitoring, Logs & Reliability (**in progress**), with the shared OAuth account foundation implemented on the draft PR #39 branch. The production baseline remains the repository-linked deployment; the refreshed UI and OAuth work are not in production. The requested `flowpilot-app.vercel.app` still serves the legacy app because its alias is controlled outside the connected Vercel project.
 
 | Area | Verified status and known limit |
 |---|---|
@@ -16,7 +16,7 @@ This is the **authoritative product roadmap** for FlowPilot. Update phase status
 | Visual builder | React Flow canvas, graph editing, validation, and workflow persistence are implemented. Continue testing the actual saved-and-run path, not just canvas rendering. |
 | Execution | Manual, webhook, and scheduled runs; conditions/filters; HTTP/webhook actions; AI steps; owner-only email; and private FlowPilot data-record actions are implemented with bounded execution and safe logs. |
 | Monitoring and retries | Execution history/detail, safe logs, bounded transient step retries, and one manual retry for eligible runs are implemented. Node-level AI/HTTP/email and Neon credential/record requests respect execution budgets. Route-level persistence can still be interrupted by serverless termination; client cancellation cannot prove a database statement already accepted was rolled back. |
-| Native app connectors | Airtable, Gmail, Slack, Google Sheets, Drive, and Calendar are planned capabilities, not complete product connectors until owner authorization, useful actions/triggers, mapping, failure behavior, and end-to-end verification all exist. A generic HTTP node or placeholder page does not count. |
+| Native app connectors | A reusable Gmail/Slack/Airtable OAuth account foundation (state/session/browser binding, encrypted server-side tokens, refresh, and disconnect) is implemented on draft PR #39. Production provider credentials are absent, so Connect remains disabled and real provider authorization is unverified. Gmail/Slack/Airtable workflow actions, resource discovery, mapping, failure behavior, and end-to-end execution remain unimplemented. Google Sheets, Drive, and Calendar remain planned. An OAuth foundation or generic HTTP node does not count as a complete product connector. |
 | Production E2E | Health and database connectivity are verified. Authenticated workflow creation, activation, provider authorization, execution, and recovery still need a safe end-to-end production test. |
 
 ## Development rules and ordering
@@ -76,7 +76,7 @@ Support owner-scoped Gemini/OpenAI credentials encrypted at rest, curated provid
 
 Implement manual, webhook, and daily scheduled triggers; owner-only email notification; and owner-private FlowPilot data-record create/update actions. See [`schedule-trigger.md`](schedule-trigger.md) for the supported schedule window and limits.
 
-**Important boundary:** these built-ins do not provide third-party Airtable/Gmail/Slack/Google account connections. Native connector work begins only after the shared integration foundation in Phase 10.
+**Important boundary:** these built-ins do not provide third-party Airtable/Gmail/Slack/Google workflow actions. The shared OAuth account foundation in Phase 10 is now implemented on a review branch, but a connected account does not yet provide a usable workflow action.
 
 ## Phase 8 — Execution monitoring, logs, and reliability (**in progress**)
 
@@ -102,17 +102,20 @@ Implement manual, webhook, and daily scheduled triggers; owner-only email notifi
 
 **Exit criteria:** production flows have real end-to-end evidence; security and abuse controls are adequate for the expected audience; rollout and recovery procedures are documented.
 
-## Phase 10 — Reusable native integration foundation (**planned; prerequisite for app connectors**)
+## Phase 10 — Reusable native integration foundation (**OAuth account slice implemented; full connector foundation remains in progress**)
 
 Build the general integration/account layer before provider-specific workflow modules:
 
 - Define owner-scoped connected accounts separately from AI credentials where their lifecycles differ; audit the existing schema before adding or changing tables.
 - Implement secure OAuth authorization with state/CSRF protection, PKCE where appropriate, least-privilege scopes, encrypted server-side tokens, refresh, expiry, revoke/disconnect, and reconnect behavior.
+- **Implemented on draft PR #39:** allowlisted Gmail, Slack, and Airtable OAuth configuration; expiring one-time state; initiating-session and callback-only browser-cookie binding; PKCE for Google/Airtable and opt-in Slack PKCE; encrypted verifier/token bundles; safe account list/connect/callback/disconnect APIs; rotating refresh-token persistence; Integration setup/status UI; AI/OAuth credential isolation; mocked lifecycle tests. Provider secrets are not configured, the DB migration is not applied, and no real provider connection has been verified.
 - Build reusable connector metadata, trigger/action contracts, typed configuration, credential resolution, field discovery/mapping, safe output summaries, and error normalization.
 - Add a responsive Connected Apps UI with connect, status, reconnect, and disconnect states; never expose access/refresh tokens to the browser or logs.
 - Test owner isolation, token encryption and refresh, state mismatch, provider errors, revoked/expired accounts, concurrent execution, and safe retries.
 
-**Exit criteria:** at least one test connector can complete the full connect → configure → execute → map output → disconnect lifecycle without provider-specific security shortcuts.
+**Remaining boundary:** native connector metadata, trigger/action contracts, discovery/mapping, useful provider operations, and a safe real provider test remain. Until those exist, connected OAuth accounts cannot be used in workflows.
+
+**Exit criteria:** at least one test connector can complete the full connect → configure → execute → map output → disconnect lifecycle without provider-specific security shortcuts. The OAuth account foundation alone does not satisfy this exit criterion.
 
 ## Phase 11 — Airtable connector (**planned; first native app**)
 
