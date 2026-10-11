@@ -16,10 +16,10 @@
   - Acceptance: API routes cover account listing, start, callback, and disconnect; AI credential management and resolution never include or delete integration-token rows.
   - Verify: dispatcher/type checks and AI-only credential predicates.
 
-- [ ] **O5 — Connect-app UI and setup guidance**
+- [x] **O5 — Connect-app UI and setup guidance**
   - Acceptance: Integrations page shows honest app-configuration status, connection states, connect/disconnect, accessible feedback, and accurate next-step action boundaries.
-  - Verify: browser review on local and Vercel Preview; confirm API setup status and keyboard focus.
+  - Verify: reviewed local UI and the latest Vercel Preview; signed-out API returns a clear 401 JSON response, status/action-boundary copy is truthful, and shared buttons use visible keyboard-focus rings. Real provider accounts remain unconnected until app credentials are configured.
 
-- [ ] **O6 — Docs, release checks, and review handoff**
+- [x] **O6 — Docs, release checks, and review handoff**
   - Acceptance: `.env.example`, architecture, roadmap, and provider setup docs state exact env names, scopes, and callback URLs; full tests/build/schema/diff checks pass; migration/deploy status is explicit.
-  - Verify: `npm run lint && npm test && npm run build && npx drizzle-kit check && git diff --check`; inspect full diff; push to existing draft PR branch.
+  - Verify: `npm run lint && npm test` (125 passing) `&& npm run build && npx drizzle-kit check && git diff --check` passed; final diff reviewed; CI passed (3/3) and the latest Preview is READY. Migration 0005 remains unapplied to shared databases, real provider OAuth is awaiting app configuration, and merge/redeploy are intentionally held.
