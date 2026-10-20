@@ -74,7 +74,7 @@ export function DashboardPage() {
   };
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-7 flowpilot-stagger">
       <section className="relative isolate overflow-hidden rounded-[28px] border border-violet-200/70 bg-gradient-to-br from-[#f0edff] via-white to-[#e9f6ff] px-6 py-7 shadow-sm shadow-violet-950/[0.03] sm:px-9 sm:py-9">
         <div className="pointer-events-none absolute -right-12 -top-24 -z-10 h-72 w-72 rounded-full bg-violet-300/20 blur-3xl" />
         <div className="pointer-events-none absolute bottom-[-75px] right-[24%] -z-10 h-56 w-56 rounded-full bg-sky-300/20 blur-3xl" />
@@ -118,8 +118,8 @@ export function DashboardPage() {
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Workspace metrics">
         {stats.map((stat) => (
-          <article key={stat.label} className="group rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm shadow-slate-950/[0.025] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-5">
-            <div className="flex items-center justify-between"><p className="text-[11px] font-semibold text-slate-500">{stat.label}</p><span className={`flex h-9 w-9 items-center justify-center rounded-xl ring-1 ${statTone[stat.tone]}`}><stat.icon className="h-4 w-4" /></span></div>
+          <article key={stat.label} className="group flowpilot-interactive-card rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm shadow-slate-950/[0.025] sm:p-5">
+            <div className="flex items-center justify-between"><p className="text-[11px] font-semibold text-slate-500">{stat.label}</p><span className={`flex h-9 w-9 items-center justify-center rounded-xl ring-1 ${statTone[stat.tone]}`}><stat.icon className="flowpilot-icon-hover h-4 w-4" /></span></div>
             <div className="mt-3 flex items-end justify-between gap-3"><p className="text-[27px] font-semibold leading-none tracking-tight text-slate-950">{stat.value}</p><p className="text-right text-[10px] text-slate-500">{stat.note}</p></div>
           </article>
         ))}
