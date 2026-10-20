@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Activity,
+  AlertCircle,
   ArrowRight,
   ArrowUpRight,
   Bot,
@@ -95,12 +96,19 @@ export function DashboardPage() {
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-600"><Activity className="h-4 w-4" /></span>
             </div>
             <div className="mt-4 flex items-center gap-3">
-              <span className={`flex h-9 w-9 items-center justify-center rounded-full ${latestRun?.status === 'failed' ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}><CheckCircle2 className="h-4 w-4" /></span>
-              <div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold text-slate-800">{latestRun ? latestRun.status === 'completed' ? 'Run completed' : latestRun.status === 'failed' ? 'Run needs attention' : 'Run in progress' : 'Ready when you are'}</p><p className="mt-0.5 text-[10px] text-slate-500">{latestRun ? formatRelativeDate(latestRun.createdAt) : 'A trigger starts the flow'}</p></div>
-              <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_4px_rgba(52,211,153,0.12)]" />
+              <span className={`flex h-9 w-9 items-center justify-center rounded-full ${latestRun?.status === 'failed' || latestRun?.interrupted ? 'bg-rose-50 text-rose-600' : latestRun?.status === 'completed' ? 'bg-emerald-50 text-emerald-600' : 'bg-violet-50 text-violet-600'}`}>
+                {latestRun?.status === 'failed' || latestRun?.interrupted
+                  ? <AlertCircle className="h-4 w-4" />
+                  : latestRun?.status === 'completed'
+                    ? <CheckCircle2 className="h-4 w-4" />
+                    : <Activity className="h-4 w-4" />}
+              </span>
+              <div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold text-slate-800">{latestRun ? latestRun.interrupted ? 'Run interrupted' : latestRun.status === 'completed' ? 'Run completed' : latestRun.status === 'failed' ? 'Run needs attention' : latestRun.status === 'pending' ? 'Run queued' : 'Run in progress' : 'Ready when you are'}</p><p className="mt-0.5 text-[10px] text-slate-500">{latestRun ? formatRelativeDate(latestRun.createdAt) : 'A trigger starts the flow'}</p></div>
+              {latestRun && <span className={`h-2 w-2 rounded-full ${latestRun.status === 'completed' ? 'bg-emerald-400' : latestRun.status === 'failed' || latestRun.interrupted ? 'bg-rose-400' : latestRun.status === 'pending' ? 'bg-amber-400' : 'bg-violet-400'}`} aria-label={`Status: ${latestRun.status}`} />}
             </div>
-            <div className="mt-4 flex items-center gap-2">
-              <span className="h-1.5 flex-1 rounded-full bg-violet-500" /><span className="h-1.5 flex-1 rounded-full bg-violet-400" /><span className="h-1.5 flex-1 rounded-full bg-sky-300" /><span className="h-1.5 flex-1 rounded-full bg-slate-100" />
+            <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-[10px] text-slate-500">
+              <span>Execution status</span>
+              <span className={`rounded-full px-2 py-1 font-semibold capitalize ${latestRun ? statusTone[latestRun.status] : 'bg-slate-100 text-slate-500'}`}>{latestRun ? latestRun.interrupted ? 'Interrupted' : latestRun.status : 'No runs yet'}</span>
             </div>
           </div>
         </div>
