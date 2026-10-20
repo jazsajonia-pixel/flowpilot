@@ -33,7 +33,7 @@ const templates: WorkflowTemplate[] = [
       { category: "ai_classification", type: "ai", label: "Review content" },
       { category: "condition", type: "logic", label: "Review passed?" },
       { category: "ai_generation", type: "ai", label: "Revise content" },
-      { category: "create_db_record", type: "action", label: "Save final content", config: { collection: "content_drafts", data: "{\"status\": \"ready_for_review\", \"content\": \"{{steps.CONTENT_STEP_ID.result}}\"}" } },
+      { category: "create_db_record", type: "action", label: "Save final content", config: { collection: "content_drafts" } },
     ],
   },
   {
