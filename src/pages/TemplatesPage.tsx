@@ -138,16 +138,16 @@ export function TemplatesPage() {
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="flowpilot-stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {templates.map((template) => {
           const isCreating = creatingId === template.id;
           const isBusy = creatingId !== null;
           return (
-            <Card key={template.id} className="flex min-w-0 flex-col">
+            <Card key={template.id} className="flowpilot-interactive-card flex min-w-0 flex-col overflow-hidden">
               <CardHeader className="flex-1">
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <Badge variant="secondary" className="gap-1 whitespace-normal">
-                    <Sparkles className="h-3 w-3 shrink-0 text-primary" />
+                    <Sparkles className="flowpilot-icon-hover h-3 w-3 shrink-0 text-primary" />
                     {template.badge}
                   </Badge>
                   <span className="shrink-0 text-xs text-muted-foreground">{template.nodes.length} steps</span>
