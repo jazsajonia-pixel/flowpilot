@@ -34,7 +34,9 @@ export function AppShell() {
         />
         <main className="flex-1 overflow-y-auto bg-background/70">
           <PageContainer>
-            <Outlet />
+            <div key={location.pathname} className="flowpilot-page-enter">
+              <Outlet />
+            </div>
           </PageContainer>
         </main>
       </div>
