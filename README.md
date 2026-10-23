@@ -134,7 +134,7 @@ FlowPilot AI
 - **Current focus:** Phase 8 — execution monitoring and reliability; details and remaining work are in [`docs/roadmap.md`](docs/roadmap.md).
 - **Next:** Phase 9 production hardening, then Phase 10 connector infrastructure and the native app integrations planned through Phase 16.
 
-See [`docs/roadmap.md`](docs/roadmap.md) for the complete phase plan and [`docs/autonomous-development-prompt.md`](docs/autonomous-development-prompt.md) for the full autonomous-development instructions.
+See [`docs/roadmap.md`](docs/roadmap.md) for the complete phase plan, [`docs/autonomous-development-prompt.md`](docs/autonomous-development-prompt.md) for the ongoing autonomous-development instructions, and [`docs/full-platform-development-prompt.md`](docs/full-platform-development-prompt.md) for the comprehensive platform evolution mandate.
 
 ---
 
@@ -151,7 +151,8 @@ See [`docs/roadmap.md`](docs/roadmap.md) for the complete phase plan and [`docs/
 - [`docs/phase-4-references.md`](docs/phase-4-references.md) — Official sources used for execution limits and outbound request safeguards.
 - [`docs/roadmap.md`](docs/roadmap.md) — Multi-Phase Development Roadmap.
 - [`docs/ci.md`](docs/ci.md) — GitHub Actions CI pipeline, Dependabot, and PR/task templates.
-- [`docs/autonomous-development-prompt.md`](docs/autonomous-development-prompt.md) — Full instructions used by FlowPilot's autonomous development task.
+- [`docs/autonomous-development-prompt.md`](docs/autonomous-development-prompt.md) — Ongoing autonomous-development instructions and run priorities.
+- [`docs/full-platform-development-prompt.md`](docs/full-platform-development-prompt.md) — Comprehensive development prompt for evolving FlowPilot into a secure, production-ready automation platform.
 
 ---
 
