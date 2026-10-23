@@ -27,7 +27,7 @@
     "react-hook-form": "^7.51.2",
     "react-router-dom": "7.18.4",
     "tailwind-merge": "^2.2.2",
-    "zod": "^3.22.4"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@netlify/functions": "^6.0.2",
