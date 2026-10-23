@@ -54,3 +54,19 @@ HAVING COUNT(*) > 1;
 ```
 
 The query must return no rows before migration `0005_oauth_state` is applied. The migration creates `oauth_states`, adds its owner/indexes, and replaces the non-unique credential integration index with a unique one; it does not delete or rewrite credential rows, so a preflight is required before applying it to a populated database. Apply and verify the migration on both `flowpilot-staging` (Vercel Preview) and `flowpilot-production` before adding provider OAuth environment variables or enabling Connect. Do not test with writes against the production database.
+
+## Applied migration status
+
+**Checked 2026-10-23** by reading `information_schema`/`pg_indexes` on both Neon projects (read-only queries).
+
+| Migration | `flowpilot-staging` (Preview) | `flowpilot-production` (Production) |
+| --- | --- | --- |
+| `0000`–`0004` | Objects present | Objects present |
+| `0005_oauth_state` | **Not applied** (`oauth_states` table and `credentials_integration_id_unique` index absent) | **Not applied** (same) |
+
+- The `0005` duplicate-link preflight above returned no rows on both databases (no credential currently has a non-null `integration_id`).
+- `0005` was rehearsed on a temporary Neon branch copied from `flowpilot-production`: all seven statements succeeded in one transaction, and afterwards every index declared in `src/db/schema.ts` existed. The real staging and production databases were **not** changed.
+- **Drizzle migration tracking is inconsistent.** `flowpilot-staging` has `drizzle.__drizzle_migrations` with only 3 rows, even though objects from `0003`/`0004` exist; `flowpilot-production` has no tracking table. Running `drizzle-kit migrate` against either database would try to re-apply earlier migrations and fail. Apply `0005` by running its statements explicitly (split on `--> statement-breakpoint`) in one transaction, and repair or baseline the tracking table only as a separate, reviewed task.
+- `flowpilot-production` also has an index `connections_workflow_id_duplicate_idx` that no repository migration creates. Its origin is unknown; leave it in place until it is investigated.
+
+Rollout order: preflight → apply `0005` to `flowpilot-staging` → verify → apply to `flowpilot-production` → verify → only then configure provider OAuth environment variables. Applying to the real databases requires the owner's approval.
