@@ -132,8 +132,8 @@ FlowPilot AI
 
 - **Completed baseline:** Phases 0–7 (project foundation, auth/ownership, visual builder, execution, AI/BYO-AI, and built-in triggers/actions).
 - **Current focus:** Phase 8 — execution monitoring and reliability; details and remaining work are in [`docs/roadmap.md`](docs/roadmap.md).
-- **Next:** Phase 9 production hardening, then Phase 10 connector infrastructure and the native app integrations planned through Phase 16.
-
+- **Phase 10 status:** The Gmail/Slack/Airtable OAuth account foundation is implemented, but provider credentials are not configured, real provider authorization has not been verified, and connected accounts cannot yet run workflow actions. Native connectors remain future work.
+- **Next:** Phase 9 production hardening, then the remaining Phase 10 connector infrastructure and native app integrations planned through Phase 16.
 See [`docs/roadmap.md`](docs/roadmap.md) for the complete phase plan, [`docs/autonomous-development-prompt.md`](docs/autonomous-development-prompt.md) for the ongoing autonomous-development instructions, and [`docs/full-platform-development-prompt.md`](docs/full-platform-development-prompt.md) for the comprehensive platform evolution mandate.
 
 ---
