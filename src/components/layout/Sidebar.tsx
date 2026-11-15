@@ -53,8 +53,8 @@ function NavigationGroup({ title, links, onClose }: { title: string; links: type
           >
             {({ isActive }) => (
               <>
-                {isActive && <span className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-gradient-to-b from-violet-300 to-sky-300" />}
-                <item.icon className={cn('h-[17px] w-[17px] shrink-0 transition-colors', isActive ? 'text-violet-200' : 'text-slate-500 group-hover:text-slate-300')} aria-hidden="true" />
+                {isActive && <span className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-gradient-to-b from-brand-300 to-cyan-300" />}
+                <item.icon className={cn('h-[17px] w-[17px] shrink-0 transition-colors', isActive ? 'text-brand-200' : 'text-slate-500 group-hover:text-slate-300')} aria-hidden="true" />
                 <span>{item.name}</span>
               </>
             )}
@@ -70,14 +70,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     <>
       {isOpen && <button type="button" className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm lg:hidden" onClick={onClose} aria-label="Close navigation" />}
       <aside className={cn(
-        'fixed inset-y-0 left-0 z-50 flex w-[258px] flex-col border-r border-white/[0.06] bg-[#111526] text-white shadow-2xl transition-transform duration-300 ease-out lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:shadow-none',
+        'fixed inset-y-0 left-0 z-50 flex w-[258px] flex-col border-r border-white/[0.06] bg-[#12151c] text-white shadow-2xl transition-transform duration-300 ease-out lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:shadow-none',
         isOpen ? 'translate-x-0' : '-translate-x-full',
       )}>
         <div className="flex h-[76px] items-center justify-between border-b border-white/[0.07] px-5">
           <NavLink to="/dashboard" onClick={onClose} className="group flex items-center gap-3">
-            <span className="relative flex h-10 w-10 items-center justify-center rounded-[14px] bg-gradient-to-br from-violet-400 via-indigo-500 to-sky-400 shadow-lg shadow-violet-950/40 transition-transform duration-300 group-hover:rotate-[-7deg] group-hover:scale-105">
+            <span className="relative flex h-10 w-10 items-center justify-center rounded-[14px] bg-gradient-to-br from-brand-400 via-brand-500 to-cyan-400 shadow-lg shadow-brand-950/40 transition-transform duration-300 group-hover:rotate-[-7deg] group-hover:scale-105">
               <Sparkles className="h-[19px] w-[19px] text-white" aria-hidden="true" />
-              <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-[#111526] bg-emerald-400" />
+              <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-[#12151c] bg-emerald-400" />
             </span>
             <span className="flex flex-col">
               <span className="text-[16px] font-bold tracking-tight text-white">FlowPilot</span>

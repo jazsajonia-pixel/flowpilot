@@ -7,6 +7,11 @@ export default {
   theme: {
     extend: {
       colors: {
+        // FlowPilot "Cobalt Graphite" accent scale. Use brand-* for UI chrome; keep violet for the AI step category only.
+        brand: {
+          50: "#eef4ff", 100: "#dbe7ff", 200: "#bfd4ff", 300: "#93b6ff", 400: "#6090ff",
+          500: "#3b6cf6", 600: "#2952e3", 700: "#2140c4", 800: "#20369e", 900: "#1f327d", 950: "#151f4c",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

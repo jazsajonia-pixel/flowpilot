@@ -74,7 +74,7 @@ export function Header({ onMobileMenuOpen, pageTitle = 'Dashboard' }: HeaderProp
     : 'FP';
 
   return (
-    <header className="sticky top-0 z-30 flex h-[76px] w-full items-center justify-between border-b border-border/80 bg-white/85 px-4 backdrop-blur-xl sm:px-7">
+    <header className="sticky top-0 z-30 flex h-[76px] w-full items-center justify-between border-b border-border/80 bg-card/85 px-4 backdrop-blur-xl sm:px-7">
       <div className="flex items-center space-x-3">
         <button
           onClick={onMobileMenuOpen}
@@ -87,10 +87,9 @@ export function Header({ onMobileMenuOpen, pageTitle = 'Dashboard' }: HeaderProp
       </div>
 
       <div className="flex items-center space-x-3">
-        <button type="button" onClick={() => navigate('/workflows')} className="hidden w-48 items-center gap-2 rounded-xl border border-border/80 bg-slate-50/80 px-3 py-2 text-left text-xs text-muted-foreground transition-all hover:border-violet-200 hover:bg-white hover:text-foreground sm:flex lg:w-64" aria-label="Browse and search workflows">
+        <button type="button" onClick={() => navigate('/workflows')} className="hidden w-48 items-center gap-2 rounded-xl border border-border/80 bg-muted/50 px-3 py-2 text-left text-xs text-muted-foreground transition-all hover:border-brand-400/40 hover:bg-card hover:text-foreground sm:flex lg:w-64" aria-label="Browse and search workflows">
           <Search className="h-3.5 w-3.5 shrink-0" />
           <span className="truncate">Find a workflow</span>
-          <kbd className="ml-auto rounded-md border border-border bg-white px-1.5 py-0.5 font-mono text-[9px]">⌘ K</kbd>
         </button>
         <Button size="sm" className="hidden h-9 gap-2 rounded-xl px-3 shadow-sm shadow-primary/15 sm:inline-flex" onClick={() => navigate('/workflows')}>
           <Plus className="h-3.5 w-3.5" /> New workflow

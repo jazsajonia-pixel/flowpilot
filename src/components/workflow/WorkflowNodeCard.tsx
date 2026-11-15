@@ -50,7 +50,7 @@ export function WorkflowNodeCard({ data, selected, isConnectable }: NodeProps<Fl
             {data.category.replace(/_/g, ' ')}
           </span>
         </span>
-        {StatusIcon && <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${executionStatus === 'success' ? 'bg-emerald-50 text-emerald-600' : executionStatus === 'error' ? 'bg-rose-50 text-rose-600' : executionStatus === 'running' ? 'bg-violet-50 text-violet-600' : 'bg-slate-100 text-slate-500'}`} title={`Step ${executionStatus}`}><StatusIcon className={`h-3.5 w-3.5 ${executionStatus === 'running' ? 'animate-spin' : ''}`} /></span>}
+        {StatusIcon && <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${executionStatus === 'success' ? 'bg-emerald-50 text-emerald-600' : executionStatus === 'error' ? 'bg-rose-50 text-rose-600' : executionStatus === 'running' ? 'bg-brand-50 text-brand-600' : 'bg-slate-100 text-slate-500'}`} title={`Step ${executionStatus}`}><StatusIcon className={`h-3.5 w-3.5 ${executionStatus === 'running' ? 'animate-spin' : ''}`} /></span>}
       </div>
       <div className={`h-1 w-full rounded-b-xl ${style.accent}`} />
       {data.category === 'condition' ? (

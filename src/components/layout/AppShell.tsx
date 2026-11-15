@@ -9,9 +9,10 @@ const routeTitleMap: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/workflows": "Workflows",
   "/templates": "Workflow Templates",
-  "/executions": "Executions History",
+  "/executions": "Run history",
   "/ai-providers": "AI Providers",
   "/integrations": "Integrations",
+  "/data": "Data records",
   "/settings": "Settings",
 };
 
@@ -19,7 +20,9 @@ export function AppShell() {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const location = useLocation();
 
-  const currentTitle = routeTitleMap[location.pathname] || "FlowPilot AI";
+  const currentTitle =
+    routeTitleMap[location.pathname] ||
+    (location.pathname.startsWith("/executions/") ? "Run details" : "FlowPilot AI");
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">

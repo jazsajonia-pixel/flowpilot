@@ -17,7 +17,7 @@ import { workflowOwnerScope } from '../../server/workflows/ownership';
 import { workflowIdSchema } from '../../server/workflows/validation';
 
 const MAX_EXECUTION_BODY_BYTES = 16 * 1024;
-const startExecutionSchema = z.object({ input: z.record(z.unknown()).optional() }).strict();
+const startExecutionSchema = z.object({ input: z.record(z.string(), z.unknown()).optional() }).strict();
 
 export const config: Config = {
   path: '/api/workflows/:workflowId/executions',
