@@ -22,7 +22,7 @@ const positionSchema = z
   .strict();
 
 const emptyConfigSchema = z
-  .record(z.unknown())
+  .record(z.string(), z.unknown())
   .refine((value) => Object.keys(value).length === 0, 'This node has no editable configuration in this phase.');
 
 const conditionConfigSchema = z
@@ -178,7 +178,7 @@ const workflowNodeSchema = z
     category: z.enum(nodeCategories),
     label: z.string().trim().min(1).max(200),
     position: positionSchema,
-    config: z.record(z.unknown()),
+    config: z.record(z.string(), z.unknown()),
   })
   .strict()
   .superRefine((node, context) => {

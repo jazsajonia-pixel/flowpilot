@@ -537,11 +537,11 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
         </div>
       )}
       {isRunning && !demo && (
-        <div className="flex shrink-0 items-center gap-3 border-b border-violet-100 bg-violet-50/90 px-4 py-2.5 text-xs text-violet-900" role="status" aria-live="polite">
-          <LoaderCircle className="h-4 w-4 animate-spin text-violet-600" />
+        <div className="flex shrink-0 items-center gap-3 border-b border-brand-100 bg-brand-50/90 px-4 py-2.5 text-xs text-brand-900" role="status" aria-live="polite">
+          <LoaderCircle className="h-4 w-4 animate-spin text-brand-600" />
           <span className="font-semibold">Workflow running</span>
-          <span className="hidden text-violet-700/80 sm:inline">Steps are executing on the FlowPilot runtime. Results will animate onto the canvas when returned.</span>
-          <span className="ml-auto h-1 w-24 overflow-hidden rounded-full bg-violet-200"><span className="block h-full w-1/2 animate-pulse rounded-full bg-violet-600" /></span>
+          <span className="hidden text-brand-700/80 sm:inline">Steps are executing on the FlowPilot runtime. Results will animate onto the canvas when returned.</span>
+          <span className="ml-auto h-1 w-24 overflow-hidden rounded-full bg-brand-200"><span className="block h-full w-1/2 animate-pulse rounded-full bg-brand-600" /></span>
         </div>
       )}
       {!demo && hasWebhookTrigger && webhookUrl && (
@@ -562,11 +562,11 @@ export function WorkflowEditorPage({ demo = false }: WorkflowEditorPageProps) {
         </section>
       )}
       {!demo && scheduleNode && (
-        <section className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b bg-violet-50 px-4 py-2 text-xs text-violet-950">
+        <section className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b bg-brand-50 px-4 py-2 text-xs text-brand-950">
           <div className="min-w-0">
             <strong>Schedule</strong>
             <p className="text-[11px]">{scheduleSummary ?? 'Choose Daily or Weekly in the Schedule Trigger settings.'}</p>
-            <p className="text-[10px] text-violet-800">Runs once per due day, starting between 00:00 and 00:59 UTC. Exact timing is not guaranteed and failed runs are not retried.</p>
+            <p className="text-[10px] text-brand-800">Runs once per due day, starting between 00:00 and 00:59 UTC. Exact timing is not guaranteed and failed runs are not retried.</p>
           </div>
           <Button type="button" size="sm" variant={workflow.isActive ? 'default' : 'outline'} disabled={hasUnsavedGraph || isActivationSaving || !scheduleSummary} onClick={() => void toggleActivation()}>
             <Power className="mr-1.5 h-3.5 w-3.5" /> {workflow.isActive ? 'Active' : 'Activate'}

@@ -4,27 +4,27 @@
 
 @layer base {
   :root {
-    /* Aurora gradient palette: midnight indigo surfaces with violet-to-sky accents. Keep gradients decorative so text always sits on solid, high-contrast surfaces. */
+    /* Cobalt Graphite palette: neutral graphite surfaces with a cobalt accent and faint cyan glow. Keep gradients decorative so text always sits on solid, high-contrast surfaces. */
     color-scheme: dark;
-    --background: 230 38% 7%;
-    --foreground: 225 30% 96%;
-    --card: 230 30% 10%;
-    --card-foreground: 225 30% 96%;
-    --popover: 230 29% 12%;
-    --popover-foreground: 225 30% 96%;
-    --primary: 250 72% 55%;
+    --background: 224 14% 7%;
+    --foreground: 220 20% 96%;
+    --card: 224 13% 10%;
+    --card-foreground: 220 20% 96%;
+    --popover: 224 13% 12%;
+    --popover-foreground: 220 20% 96%;
+    --primary: 226 77% 53%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 230 24% 16%;
-    --secondary-foreground: 225 24% 93%;
-    --muted: 230 22% 15%;
-    --muted-foreground: 222 15% 72%;
-    --accent: 247 42% 21%;
-    --accent-foreground: 224 100% 88%;
+    --secondary: 224 11% 16%;
+    --secondary-foreground: 220 18% 93%;
+    --muted: 224 11% 15%;
+    --muted-foreground: 220 10% 71%;
+    --accent: 226 38% 19%;
+    --accent-foreground: 222 100% 87%;
     --destructive: 0 68% 54%;
     --destructive-foreground: 0 0% 100%;
-    --border: 230 20% 23%;
-    --input: 230 21% 27%;
-    --ring: 250 92% 76%;
+    --border: 224 10% 22%;
+    --input: 224 10% 26%;
+    --ring: 222 100% 72%;
     --radius: 0.8rem;
   }
 
@@ -34,10 +34,10 @@
 
   body {
     @apply min-h-screen bg-background font-sans text-foreground antialiased;
-    background-image: radial-gradient(ellipse at 8% -8%, rgba(139, 92, 246, 0.16), transparent 34rem), radial-gradient(ellipse at 96% 8%, rgba(56, 189, 248, 0.09), transparent 30rem);
+    background-image: radial-gradient(ellipse at 8% -8%, rgba(59, 108, 246, 0.14), transparent 34rem), radial-gradient(ellipse at 96% 8%, rgba(34, 211, 238, 0.07), transparent 30rem);
   }
 
-  ::selection { background: rgba(139, 92, 246, 0.38); color: hsl(var(--foreground)); }
+  ::selection { background: rgba(59, 108, 246, 0.4); color: hsl(var(--foreground)); }
 
   :focus-visible {
     outline: 2px solid hsl(var(--ring));
@@ -51,8 +51,8 @@
 }
 
 @keyframes flowpilot-node-running {
-  0%, 100% { box-shadow: 0 8px 24px rgba(99, 102, 241, 0.18), 0 0 0 0 rgba(167, 139, 250, 0.18); }
-  50% { box-shadow: 0 12px 30px rgba(99, 102, 241, 0.3), 0 0 0 6px rgba(56, 189, 248, 0.12); }
+  0%, 100% { box-shadow: 0 8px 24px rgba(59, 108, 246, 0.18), 0 0 0 0 rgba(96, 144, 255, 0.18); }
+  50% { box-shadow: 0 12px 30px rgba(59, 108, 246, 0.3), 0 0 0 6px rgba(34, 211, 238, 0.12); }
 }
 
 @keyframes flowpilot-result-pop {
@@ -68,18 +68,18 @@
 
 .flowpilot-node { animation: flowpilot-node-enter 240ms cubic-bezier(0.2, 0.75, 0.25, 1) both; }
 .flowpilot-connect-enter { animation: flowpilot-node-enter 260ms cubic-bezier(0.2, 0.75, 0.25, 1) both; }
- .flowpilot-node--running { border-color: #a78bfa !important; animation: flowpilot-node-running 1.25s ease-in-out infinite; }
+ .flowpilot-node--running { border-color: #6090ff !important; animation: flowpilot-node-running 1.25s ease-in-out infinite; }
 .flowpilot-node--success { border-color: #34b88a !important; animation: flowpilot-result-pop 360ms cubic-bezier(0.2, 0.75, 0.25, 1) both; }
 .flowpilot-node--error { border-color: #ee6b78 !important; animation: flowpilot-result-pop 360ms cubic-bezier(0.2, 0.75, 0.25, 1) both; }
 .flowpilot-node--skipped { border-color: #a7afbd !important; }
 .flowpilot-drop-active {
-  background-color: #17152f !important;
-  background-image: radial-gradient(circle, rgba(167, 139, 250, 0.24) 1px, transparent 1px) !important;
+  background-color: #121a33 !important;
+  background-image: radial-gradient(circle, rgba(96, 144, 255, 0.24) 1px, transparent 1px) !important;
   background-size: 22px 22px !important;
-  box-shadow: inset 0 0 0 2px rgba(167, 139, 250, 0.48);
+  box-shadow: inset 0 0 0 2px rgba(96, 144, 255, 0.48);
 }
 .flowpilot-flow-running .react-flow__edge.animated path {
-  stroke: #a78bfa;
+  stroke: #6090ff;
   stroke-width: 2.5;
   stroke-dasharray: 7 5;
 }
@@ -99,7 +99,7 @@
 .flowpilot-stagger > *:nth-child(5) { animation-delay: 195ms; }
 .flowpilot-stagger > *:nth-child(6) { animation-delay: 235ms; }
 .flowpilot-interactive-card { transition: transform 220ms cubic-bezier(.2,.75,.25,1), box-shadow 220ms ease, border-color 220ms ease, background-color 220ms ease; }
-.flowpilot-interactive-card:hover { transform: translateY(-3px); border-color: rgba(167,139,250,.48); box-shadow: 0 14px 34px rgba(0,0,0,.24); }
+.flowpilot-interactive-card:hover { transform: translateY(-3px); border-color: rgba(96,144,255,.48); box-shadow: 0 14px 34px rgba(0,0,0,.24); }
 .flowpilot-interactive-card:active { transform: translateY(-1px) scale(.995); }
 .flowpilot-icon-hover { transition: transform 220ms ease; }
 .group:hover .flowpilot-icon-hover { transform: rotate(-5deg) scale(1.07); }

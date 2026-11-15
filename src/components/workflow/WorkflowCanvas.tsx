@@ -265,7 +265,7 @@ export function WorkflowCanvas(props: WorkflowCanvasProps) {
           aria-label={`Drag ${definition.label} onto the canvas`}
           title={`Drag ${definition.label} onto the canvas`}
           onPointerDown={(event) => startTouchDrag(event, definition)}
-          className="touch-none border-l border-slate-100 px-2 text-slate-400 hover:bg-violet-50 hover:text-violet-700 disabled:opacity-40"
+          className="touch-none border-l border-slate-100 px-2 text-slate-400 hover:bg-brand-50 hover:text-brand-700 disabled:opacity-40"
         >
           <GripVertical className="h-4 w-4" aria-hidden="true" />
         </button>
@@ -320,12 +320,12 @@ export function WorkflowCanvas(props: WorkflowCanvasProps) {
                       disabled={disabled}
                       onDragStart={(event) => onDragStart(event, definition)}
                       onClick={() => addAtCenter(definition)}
-                      className="group flex min-w-44 items-center gap-2.5 rounded-xl border border-slate-200/80 bg-white px-2.5 py-2 text-left transition-all duration-150 hover:-translate-y-px hover:border-violet-200 hover:bg-violet-50/50 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-45 lg:min-w-0"
+                      className="group flex min-w-44 items-center gap-2.5 rounded-xl border border-slate-200/80 bg-white px-2.5 py-2 text-left transition-all duration-150 hover:-translate-y-px hover:border-brand-200 hover:bg-brand-50/50 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-45 lg:min-w-0"
                       title={definition.description}
                     >
                       <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${type === 'trigger' ? 'bg-amber-50 text-amber-600' : type === 'ai' ? 'bg-violet-50 text-violet-600' : type === 'logic' ? 'bg-sky-50 text-sky-600' : 'bg-emerald-50 text-emerald-600'}`}><GroupIcon className="h-3.5 w-3.5" aria-hidden="true" /></span>
                       <span className="min-w-0 flex-1"><span className="block truncate text-[10px] font-semibold text-slate-800">{definition.label}</span><span className="mt-0.5 hidden truncate text-[9px] leading-4 text-slate-500 lg:block">{definition.description}</span></span>
-                      <GripVertical className="hidden h-3.5 w-3.5 shrink-0 text-slate-300 group-hover:text-violet-400 lg:block" aria-hidden="true" />
+                      <GripVertical className="hidden h-3.5 w-3.5 shrink-0 text-slate-300 group-hover:text-brand-400 lg:block" aria-hidden="true" />
                     </button>
                   );
                 })}
@@ -347,7 +347,7 @@ export function WorkflowCanvas(props: WorkflowCanvasProps) {
         }}
         onDrop={onDrop}
       >
-        {isDragOver && <div className="pointer-events-none absolute inset-x-0 top-4 z-20 mx-auto w-fit rounded-full border border-violet-200 bg-white/90 px-4 py-2 text-[11px] font-semibold text-violet-700 shadow-lg shadow-violet-950/10">Release to add this step</div>}
+        {isDragOver && <div className="pointer-events-none absolute inset-x-0 top-4 z-20 mx-auto w-fit rounded-full border border-brand-200 bg-white/90 px-4 py-2 text-[11px] font-semibold text-brand-700 shadow-lg shadow-brand-950/10">Release to add this step</div>}
         {props.nodes.length === 0 && (
           <div className="pointer-events-none absolute inset-x-4 top-5 z-10 mx-auto max-w-md rounded-xl border bg-white/90 p-4 text-center shadow-sm">
             <p className="text-sm font-semibold">Start with a trigger</p>
@@ -365,7 +365,7 @@ export function WorkflowCanvas(props: WorkflowCanvasProps) {
           onPaneClick={() => props.onSelectNode(null)}
           isValidConnection={isValidConnection}
           defaultEdgeOptions={{ type: 'smoothstep' }}
-          connectionLineStyle={{ stroke: '#6366f1', strokeWidth: 2 }}
+          connectionLineStyle={{ stroke: '#3b6cf6', strokeWidth: 2 }}
           fitView
           fitViewOptions={{ padding: 0.12, minZoom: 0.35, maxZoom: 1.1 }}
           nodesConnectable={!props.readOnly}
@@ -396,7 +396,7 @@ export function WorkflowCanvas(props: WorkflowCanvasProps) {
         </ReactFlow>
       </div>
 
-      {touchDrag?.dragging && <div className="pointer-events-none fixed z-[100] -translate-x-1/2 -translate-y-full rounded-lg border border-violet-200 bg-white/95 px-3 py-2 text-xs font-semibold text-violet-800 shadow-xl" style={{ left: touchDrag.x, top: touchDrag.y - 14 }}>{touchDrag.label}</div>}
+      {touchDrag?.dragging && <div className="pointer-events-none fixed z-[100] -translate-x-1/2 -translate-y-full rounded-lg border border-brand-200 bg-white/95 px-3 py-2 text-xs font-semibold text-brand-800 shadow-xl" style={{ left: touchDrag.x, top: touchDrag.y - 14 }}>{touchDrag.label}</div>}
 
       <aside className="max-h-56 shrink-0 overflow-y-auto border-t bg-card p-3 lg:max-h-none lg:w-72 lg:border-l lg:border-t-0 lg:p-4">
         <div className="mb-3 flex items-center justify-between">

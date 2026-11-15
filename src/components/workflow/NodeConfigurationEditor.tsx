@@ -148,7 +148,7 @@ export function NodeConfigurationEditor({ node, onChange, credentials = [] }: No
             </div>
           </fieldset>
         )}
-        <p className="rounded-lg border border-violet-200 bg-violet-50 p-3 text-[11px] leading-5 text-violet-950">
+        <p className="rounded-lg border border-brand-200 bg-brand-50 p-3 text-[11px] leading-5 text-brand-950">
           Scheduled runs start once per due day between 00:00 and 00:59 UTC (Vercel Hobby Cron precision). Time-of-day selection is not available. Use <code>{'{{trigger.scheduledAt}}'}</code> in later steps. Save the graph, then activate the workflow.
         </p>
       </div>
